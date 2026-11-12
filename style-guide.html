@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Olimpos — Stil rehberi</title>
+  <link rel="stylesheet" href="design-tokens.css?v=20261112-guide">
+  <link rel="stylesheet" href="styles.css?v=20261112-guide">
+  <link rel="stylesheet" href="revision-type.css?v=20261112-guide">
+  <link rel="stylesheet" href="revision-supporters.css?v=20261112-guide">
+  <style>
+    .guide { padding-block: 48px 96px; } .guide h1 { font-size: var(--page-title-size); line-height: 1.2; }
+    .guide section { margin-top: var(--section-space); } .guide h2 { font-size: var(--section-title-size); line-height: 1.25; }
+    .guide h3 { font-size: var(--content-title-size); } .guide p { font-size: var(--body-size); line-height: 1.6; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 16px; } .swatch { border: 1px solid var(--color-divider); padding: 12px; min-width: 150px; }
+    .swatch::before { content: ''; display: block; height: 48px; background: var(--swatch); margin-bottom: 8px; }
+    .guide-actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; } .guide .gallery-card { max-width: 650px; }
+    .guide .newsletter-form { max-width: 600px; } .guide .newsletter-form label { grid-column: 1 / -1; margin-bottom: var(--space-field); }
+    .guide .newsletter-form input { grid-column: 1 / -1; } .guide .newsletter-status { display: block; }
+    .guide .container-example { border: 1px solid var(--color-divider); padding: 16px; } .guide .container-example + .container-example { margin-top: 16px; }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#guide-main">İçeriğe geç</a>
+<main id="guide-main" class="guide wide-container">
+  <h1>Olimpos stil rehberi</h1><p>Ortak stillerin ve bileşen durumlarının örnekleri.</p>
+  <section><h2>Renkler</h2><div class="swatches">
+    <div class="swatch" style="--swatch:var(--color-bg)">Zemin · #000</div><div class="swatch" style="--swatch:var(--color-heading)">Başlık · #e9ecf1</div><div class="swatch" style="--swatch:var(--color-body)">Gövde · #e5e5e5</div><div class="swatch" style="--swatch:var(--color-muted)">Yardımcı · #9b9b9b</div><div class="swatch" style="--swatch:var(--color-accent)">Vurgu · #eec341</div><div class="swatch" style="--swatch:var(--color-error)">Hata · #ff9b9b</div>
+  </div></section>
+  <section><h2>Tipografi</h2><h3>Anlatı başlığı</h3><p>Gökyüzünün altında bilim, doğa ve keşif bir arada.</p><p style="font-size:var(--helper-size)">Yardımcı metin örneği.</p></section>
+  <section><h2>Konteynerler</h2><div class="container-example">Geniş içerik · en çok 1600px</div><div class="container-example reading-container">Okuma ve medya · en çok 860px</div></section>
+  <section><h2>Eylemler</h2><div class="guide-actions"><a class="outline-link" href="#alan">ÖRNEK BAĞLANTI</a><button class="outline-link" type="button">ÖRNEK BUTON</button><button class="outline-link" type="button" disabled>DEVRE DIŞI</button><a href="#kart">Metin bağlantısı</a></div><p>Odak ve hover durumlarını klavye veya fareyle inceleyebilirsin.</p></section>
+  <section id="alan"><h2>Form alanı</h2><form class="newsletter-form" onsubmit="return false"><label for="sample-email">E-posta adresin</label><input id="sample-email" type="email" autocomplete="email" aria-describedby="sample-error" aria-invalid="true" value="ornek"><p id="sample-error" class="newsletter-status">Örnek hata: Geçerli bir e-posta adresi gir.</p></form><p>Örnek durum: gönderiliyor… Bu form veri göndermez.</p></section>
+  <section id="kart"><h2>Kart</h2><article class="gallery-card" tabindex="0"><img src="assets/images/gallery-observations.webp" alt="Gökyüzü gözlemi"><span>Gökyüzü gözlemleri ve uzun kart başlığı örneği</span><i aria-hidden="true">↗</i></article></section>
+</main>
+</body></html>

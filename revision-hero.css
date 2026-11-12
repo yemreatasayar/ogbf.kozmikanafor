@@ -1,0 +1,91 @@
+/* Hero refinement: retain the reversible scroll scene and its eight cloud layers. */
+.hero { --hero-stage-height: min(81vw, 1166px); }
+.hero-copy { top: min(61.35vw, 883px); }
+.hero-telescope {
+  left: 59%;
+  top: 68%;
+  width: 12%;
+  height: auto !important;
+  aspect-ratio: 210 / 390;
+  object-fit: contain;
+}
+.hero-tagline { margin: 16px auto 0; }
+.outline-link.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 22px auto 0;
+  padding: 12px 26px;
+  border: 1px solid #eec341;
+  color: #080808;
+  background: #eec341;
+  font-size: clamp(14px, 1.05vw, 16px);
+  font-weight: 600;
+  letter-spacing: .08em;
+  line-height: 1.35;
+  text-align: center;
+  cursor: pointer;
+}
+.outline-link.hero-cta:hover,
+.outline-link.hero-cta:focus-visible {
+  border-color: #f5d568;
+  color: #080808;
+  background: #f5d568;
+}
+.outline-link.hero-cta:focus-visible {
+  outline: 2px solid #eec341;
+  outline-offset: 5px;
+}
+@media (max-width: 800px) {
+  .hero { --hero-stage-height: max(840px, 124vw); }
+  .hero-copy { top: auto; bottom: 44px; }
+  .hero-telescope { left: 57%; top: 70%; width: 18%; }
+  .hero-tagline { margin-top: 16px; }
+  .outline-link.hero-cta { margin-top: 20px; }
+}
+
+/* Match the hero's two supporting lines and enlarge the outlined primary action. */
+.hero-date, .hero-tagline { font-size: clamp(16px, 1.74vw, 25px); }
+.outline-link.hero-cta {
+  min-height: 52.8px;
+  padding: 13.2px 28.6px;
+  border-color: var(--paper);
+  color: var(--paper);
+  background: transparent;
+  font-size: clamp(15.4px, 1.155vw, 17.6px);
+}
+.outline-link.hero-cta:hover,
+.outline-link.hero-cta:focus-visible {
+  color: #080808;
+  border-color: #eec341;
+  background: #eec341;
+}
+@media (max-width: 800px) {
+  .hero-date, .hero-tagline { font-size: clamp(16px, 2.6vw, 17px); }
+}
+
+.hero-tagline { font-weight: 600; }
+/* The primary action shares the secondary action's em-based padding standard. */
+.outline-link.hero-cta {
+  min-height: 44px;
+  padding: .6em 1em;
+}
+
+/* Align the sky with the top edge while moving its entire composition together. */
+@media (min-width: 801px) {
+  .hero { --hero-art-lift: min(2.5vw, 36px); --hero-stage-height: calc(min(81vw, 1166px) - var(--hero-art-lift)); }
+  .hero-art { top: calc(0px - var(--hero-art-lift)); }
+  .hero-copy { top: calc(min(61.35vw, 883px) - var(--hero-art-lift)); }
+}
+@media (min-width: 1025px) {
+  .hero-mountains { top: auto; bottom: 0; height: auto !important; }
+}
+
+/* A short sticky interval gives the entrance time without a long pause. */
+.hero { height: calc(var(--hero-stage-height) + 120px); }
+.hero-stage { position: sticky; top: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .hero { height: var(--hero-stage-height); }
+  .hero-stage { position: relative; top: auto; }
+}

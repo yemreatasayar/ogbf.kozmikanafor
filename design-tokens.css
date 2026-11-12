@@ -1,0 +1,24 @@
+:root {
+  --color-bg: #000; --color-heading: #e9ecf1; --color-body: #e5e5e5;
+  --color-muted: #9b9b9b; --color-accent: #eec341; --color-divider: rgba(232,236,241,.38);
+  --color-border: #e9ecf1; --color-error: #ff9b9b;
+  --ink: var(--color-bg); --paper: var(--color-heading); --copy: var(--color-body);
+  --muted: var(--color-muted); --hairline: var(--color-divider);
+  --gutter: clamp(32px, 3.7vw, 80px); --wide-max: 1600px; --reading-max: 860px;
+  --section-space: clamp(64px, 6.7vw, 104px); --newsletter-space: clamp(48px, 5vw, 72px);
+  --section-gap: var(--section-space); --newsletter-gap: var(--newsletter-space);
+  --section-title-size: clamp(28px, 2.7vw, 42px); --content-title-size: clamp(24px, 2.15vw, 32px);
+  --page-title-size: clamp(36px, 3.5vw, 56px); --card-title-size: clamp(18px, 1.5vw, 24px);
+  --body-size: clamp(16px, 1.3vw, 20px); --helper-size: clamp(14px, 1.05vw, 16px);
+  --action-font-size: clamp(14px, 1.08vw, 16px); --control-height: 44px;
+  --space-heading: 16px; --space-content: 32px; --space-paragraph: 16px;
+  --space-action: 24px; --space-field: 8px; --card-gap: 32px;
+  --motion-action: .22s; --motion-reveal: .5s;
+}
+@media (max-width: 800px) {
+  :root { --gutter: clamp(20px, 5vw, 40px); --section-space: 56px; --newsletter-space: 48px;
+    --section-title-size: clamp(26px, 4.4vw, 34px); --content-title-size: clamp(23px, 3.8vw, 28px);
+    --page-title-size: clamp(30px, 6vw, 40px); --card-title-size: 19px; --body-size: 16px;
+    --helper-size: 14px; --action-font-size: 14px; --space-content: 24px; --card-gap: 16px; }
+}
+@media (max-width: 520px) { :root { --card-title-size: 18px; } }

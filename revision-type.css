@@ -1,0 +1,194 @@
+/* Homepage review: typography and interaction affordances. Loaded after styles.css. */
+/* Spaced capitals identify sections; narrative headings retain normal sentence case. */
+.section-heading h2,
+.supporters h2 {
+  font-size: var(--section-title-size);
+  font-weight: 600;
+  letter-spacing: .085em;
+  line-height: 1.25;
+}
+.about h2,
+.film h2,
+.newsletter h2 {
+  font-size: var(--content-title-size);
+  font-weight: 600;
+  letter-spacing: .015em;
+  line-height: 1.35;
+  text-transform: none;
+}
+.section-heading p,
+.about p,
+.newsletter p {
+  font-size: var(--body-size);
+  line-height: 1.6;
+  letter-spacing: .015em;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: clamp(14px, 1.14vw, 18px);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: .04em;
+  padding-block: 6px 10px;
+}
+.nav-link[aria-current="page"]::before {
+  top: calc(50% - 2px);
+  transform: translateY(-50%);
+}
+
+/* Retain the four photographs and proportions while giving titles a calm dark base. */
+.gallery-card::after {
+  inset: 38% 0 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, .12) 32%, rgba(0, 0, 0, .66) 100%);
+}
+.gallery-card span {
+  max-width: calc(100% - 76px);
+  font-size: clamp(18px, 1.5vw, 24px);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: .015em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .55);
+}
+.gallery-card i { bottom: 9%; }
+
+.outline-link:not(.hero-cta),
+.about-link,
+.newsletter-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--action-font-size);
+  padding: .6em 1em;
+}
+.newsletter-form .text-link { padding-inline: .15em; }
+.newsletter-form input:not(.honeypot) {
+  min-height: 44px;
+  color: var(--paper);
+  font-size: max(16px, var(--helper-size));
+  line-height: 1.5;
+  letter-spacing: .05em;
+}
+.newsletter-form input::placeholder { color: #ababab; }
+.captcha-slot { font-size: 13px; }
+.newsletter .newsletter-status { font-size: var(--helper-size); }
+.site-footer p {
+  font-size: clamp(13px, .95vw, 14px);
+  letter-spacing: .06em;
+  line-height: 1.7;
+}
+.footer-credit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* Visible focus also covers cards (articles), location, menu and the real video player. */
+.nav-link:focus-visible,
+.outline-link:focus-visible,
+.gallery-card:focus-visible,
+.menu-toggle:focus-visible,
+.location-link:focus-visible,
+.film-cover:focus-visible,
+.film-player:focus-visible,
+.marquee:focus-visible,
+.supporter-link:focus-visible,
+.footer-credit:focus-visible {
+  outline: 2px solid #eec341;
+  outline-offset: 5px;
+}
+.newsletter-form input:focus { border-color: #eec341; }
+.film-cover { min-height: 44px; }
+
+@media (max-width: 800px) {
+  /* Keep the same small drawn hamburger inside a comfortable hit area. */
+  .menu-toggle { width: 44px; height: 44px; padding: 10.8px; }
+  .nav-link { min-height: 44px; font-size: 16px; padding-block: 10px; }
+  .nav-link[aria-current="page"]::before { top: 50%; }
+  .gallery-card span { font-size: 19px; left: 4%; bottom: 9%; }
+  .site-header { position: absolute; }
+  .film h2 { max-width: 30ch; }
+}
+@media (max-width: 520px) {
+  .gallery-card span { font-size: 18px; }
+  .gallery-card i { width: 22px; height: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-card:hover,
+  .gallery-card:focus-visible,
+  .gallery-card:hover img,
+  .gallery-card:focus-visible img { transform: none; }
+}
+
+.footer-credit {
+  display: inline-block;
+  font-size: 85%;
+  line-height: 1.3;
+  vertical-align: top;
+}
+.sky-meteor { height: 1.5px; animation-duration: 1.5s; }
+
+/* Keep browser autofill legible on the site's black background. */
+.newsletter-form input[type="email"]:-webkit-autofill,
+.newsletter-form input[type="email"]:-webkit-autofill:hover,
+.newsletter-form input[type="email"]:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e9ecf1;
+  -webkit-box-shadow: 0 0 0 1000px #000 inset;
+  box-shadow: 0 0 0 1000px #000 inset;
+  caret-color: #e9ecf1;
+}
+.newsletter-form input[type="email"]:autofill {
+  -webkit-text-fill-color: #e9ecf1;
+  box-shadow: 0 0 0 1000px #000 inset;
+  caret-color: #e9ecf1;
+}
+
+/* Subtle feedback that keeps the gallery frame and captions in place. */
+@media (prefers-reduced-motion: no-preference) {
+  .gallery-card:hover, .gallery-card:focus-visible { transform: none; }
+  .gallery-card img { transition: transform .7s ease; }
+  .gallery-card:hover img, .gallery-card:focus-visible img { transform: scale(1.03); }
+  .reveal { transition-duration: .5s; }
+  .section-heading.reveal p { opacity: 0; transform: translateY(12px); transition: opacity .5s ease .1s, transform .5s ease .1s; }
+  .section-heading.reveal.is-revealed p { opacity: 1; transform: none; }
+  .outline-link { transition: color .22s ease, background-color .22s ease, border-color .22s ease, transform .15s ease; }
+  .outline-link:active { transform: scale(.98); }
+}
+.film-cover img { transition: filter .25s ease; }
+.film-cover:hover img, .film-cover:focus-visible img { filter: brightness(1.08); }
+.play-mark { transition: transform .25s ease, color .25s ease; }
+.newsletter-form input[type="email"] { transition: border-color .22s ease; }
+
+/* Shared layout and component contracts. */
+.gallery { width: min(calc(100% - 2 * var(--gutter)), var(--wide-max)); margin: calc(var(--section-space) - var(--hero-visible-tail, 0px)) auto 0; padding: 0; }
+.about, .film, .supporters { margin-top: var(--section-space); }
+.newsletter, .site-footer { margin-top: var(--newsletter-space); }
+.about-copy, .film-inner, .newsletter-inner, .reading-container { width: min(calc(100% - 2 * var(--gutter)), var(--reading-max)); margin-inline: auto; }
+.wide-container { width: min(calc(100% - 2 * var(--gutter)), var(--wide-max)); margin-inline: auto; }
+.newsletter-inner > p { max-width: 65ch; }
+.section-heading p { margin-top: var(--space-heading); }
+.gallery-grid { gap: var(--card-gap); margin-top: var(--space-content); }
+.gallery-card span { font-size: var(--card-title-size); overflow-wrap: anywhere; }
+.about h2, .newsletter h2 { margin-bottom: var(--space-heading); }
+.about p { margin: 0 0 var(--space-paragraph); }
+.about-link { margin-top: 8px; }
+.film h2 { margin-bottom: var(--space-action); }
+.newsletter-inner > p { margin-bottom: var(--space-action); }
+.outline-link { min-height: var(--control-height); padding: .6em 1em; border-color: var(--color-border); font-weight: 500; letter-spacing: .08em; }
+.hero-cta { font-size: calc(var(--action-font-size) * 1.1); }
+.newsletter-form .text-link { padding-inline: .15em; }
+.newsletter-form input[type="email"]:focus { border-color: var(--color-accent); box-shadow: inset 0 -1px var(--color-accent); outline: none; }
+.newsletter-form input[type="email"][aria-invalid="true"] { border-color: var(--color-error); }
+.newsletter-status { color: var(--color-body); }
+:where(a, button, .gallery-card, .film-player, .marquee):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
+a:not(.outline-link):not(.nav-link):hover { color: var(--color-accent); text-decoration: underline; text-underline-offset: .2em; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button:disabled:hover { color: var(--color-heading); background: transparent; }
+.skip-link { position: fixed; left: var(--gutter); top: 8px; z-index: 100; padding: 12px; background: var(--color-bg); transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+[id] { scroll-margin-top: 100px; }
+@media (max-width: 800px) { [id] { scroll-margin-top: 0; } }
+@media (prefers-reduced-motion: reduce) { .outline-link:active { transform: none; } }
