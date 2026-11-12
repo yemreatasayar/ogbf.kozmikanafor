@@ -224,6 +224,7 @@ function queueHero() {
 addEventListener("scroll", queueHero, { passive: true });
 addEventListener("resize", queueHero, { passive: true });
 renderHero();
+document.documentElement.classList.remove("hero-initializing");
 // Logo height is not reliable until its image has loaded; recalculate the ridge mask.
 document.querySelectorAll(".hero-art img").forEach(image => {
   image.addEventListener("load", queueHero, { once: true });
