@@ -96,7 +96,9 @@ layoutClouds();
 addEventListener('resize', layoutClouds, { passive: true });
 document.querySelector('.hero-sky').addEventListener('load', layoutClouds, { once: true });
 let scheduled = false;
-let heroProgress = Math.max(0, Math.min(1, scrollY / Math.min(560, Math.max(360, innerWidth * .39))));
+// A restored scroll position must never leave the scene on an unfinished frame.
+let heroProgress = scrollY > 0 ? 1 : 0;
+let heroGestureReceived = false;
 let heroMotionFrame = 0;
 let heroMotionTarget = heroProgress;
 const easeLayer = (progress, start, end) => {
@@ -147,6 +149,7 @@ function animateHeroTo(target) {
   heroMotionFrame = requestAnimationFrame(step);
 }
 function heroInput(direction) {
+  heroGestureReceived = true;
   const range = Math.min(560, Math.max(360, innerWidth * .39));
   if (direction > 0 && scrollY <= range + 24) animateHeroTo(1);
   else if (direction < 0 && scrollY <= 0) animateHeroTo(0);
@@ -156,7 +159,14 @@ function heroInput(direction) {
 let previousHeroScrollY = scrollY;
 addEventListener("scroll", () => {
   const currentScrollY = Math.max(0, scrollY);
-  if (currentScrollY === 0 && previousHeroScrollY > 0) animateHeroTo(0);
+  if (!heroGestureReceived) {
+    // Browsers can restore scroll after scripts have already initialized.
+    heroProgress = currentScrollY > 0 ? 1 : 0;
+    heroMotionTarget = heroProgress;
+    queueHero();
+  } else if (currentScrollY === 0 && previousHeroScrollY > 0) {
+    animateHeroTo(0);
+  }
   previousHeroScrollY = currentScrollY;
 }, { passive: true });
 addEventListener("wheel", event => {
