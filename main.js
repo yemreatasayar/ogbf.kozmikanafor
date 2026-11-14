@@ -1,4 +1,4 @@
-import { galleryCards, featuredSupporters, marqueeSupporters, supporters, siteSettings, locationUrl } from "./content.js?v=20261030-mobile-7";
+import { galleryCards, featuredSupporters, marqueeSupporters, siteSettings, locationUrl } from "./content.js?v=20261030-mobile-7";
 import { bindMarqueeDrag } from "./marquee-drag.mjs?v=20261104-review";
 
 const gallery = document.querySelector("#gallery-grid");
@@ -87,7 +87,13 @@ function layoutClouds() {
   const imageTop = skyImage.offsetTop + (height - 1080 * scale) / 2;
   movingClouds.forEach((cloud, i) => {
     const [x, y, width] = referenceClouds[i];
-    cloud.style.left = `${imageLeft + x * scale}px`;
+    let left = imageLeft + x * scale;
+    if (innerWidth <= 800) {
+      // Nudge the mobile composition towards the center without changing scale.
+      const center = left + width * scale / 2;
+      left += center < artFrame.clientWidth / 2 ? artFrame.clientWidth * .03 : -artFrame.clientWidth * .03;
+    }
+    cloud.style.left = `${left}px`;
     cloud.style.top = `${imageTop + y * scale}px`;
     cloud.style.width = `${width * scale}px`;
   });
@@ -335,22 +341,6 @@ addEventListener("resize", () => {
 }, { passive: true });
 document.fonts.ready.then(refreshMarqueeMetrics);
 reduceMotion.addEventListener("change", refreshMarqueeMetrics);
-
-// A tap-accessible alternative keeps supporter destinations as ordinary links.
-const logoDisclosure = document.createElement("div");
-logoDisclosure.className = "supporter-logo-disclosure";
-logoDisclosure.innerHTML = `<button class="supporter-logo-toggle" type="button" aria-expanded="false" aria-controls="supporter-logo-grid">Destekçi logolarını göster</button><div class="supporter-logo-grid" id="supporter-logo-grid" hidden>${supporters.map(supporter => {
-  const logo = `<img src="assets/supporters/${supporter.logo}" alt="" loading="lazy" decoding="async"><span>${supporter.name}</span>`;
-  return supporter.url ? `<a class="supporter-logo-card" href="${supporter.url}" target="_blank" rel="noopener noreferrer">${logo}</a>` : `<div class="supporter-logo-card">${logo}</div>`;
-}).join("")}</div>`;
-supportersSection.append(logoDisclosure);
-const logoToggle = logoDisclosure.querySelector("button");
-logoToggle.addEventListener("click", () => {
-  const expanded = logoToggle.getAttribute("aria-expanded") !== "true";
-  logoToggle.setAttribute("aria-expanded", String(expanded));
-  logoToggle.textContent = expanded ? "Destekçi logolarını gizle" : "Destekçi logolarını göster";
-  logoDisclosure.querySelector(".supporter-logo-grid").hidden = !expanded;
-});
 
 // Newsletter integration boundary: configure a Turnstile site key and a server endpoint in siteSettings.
 const newsletterForm = document.querySelector(".newsletter-form");

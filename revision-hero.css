@@ -39,6 +39,7 @@
 }
 @media (max-width: 800px) {
   .hero { --hero-stage-height: max(840px, 124vw); }
+  .festival-logo { width: 37.7775%; left: 31.11125%; }
   .hero-copy { top: auto; bottom: 44px; }
   .hero-telescope { left: 57%; top: 70%; width: 18%; }
   .hero-tagline { margin-top: 16px; }

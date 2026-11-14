@@ -9,56 +9,6 @@
 .sponsor-preview.is-visible { transform: translate(-50%, -50%) scale(1); }
 .sponsor-preview img { width: 132px; height: 132px; }
 .sponsor-preview img.is-wide { width: 242px; height: 132px; }
-.supporter-logo-disclosure { display: none; }
-.supporter-logo-toggle {
-  min-height: 44px;
-  padding: 10px 14px;
-  color: var(--paper);
-  border: 1px solid var(--hairline);
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: .03em;
-  cursor: pointer;
-}
-.supporter-logo-toggle:hover { color: #000; background: #eec341; border-color: #eec341; }
-.supporter-logo-toggle:focus-visible, .supporter-logo-card:focus-visible {
-  outline: 2px solid #eec341;
-  outline-offset: 4px;
-}
-.supporter-logo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin: 20px auto 0;
-  max-width: 680px;
-}
-.supporter-logo-grid[hidden] { display: none; }
-.supporter-logo-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: start;
-  gap: 10px;
-  padding: 12px 8px;
-  font-size: 12px;
-  line-height: 1.4;
-}
-.supporter-logo-card img {
-  display: block;
-  width: 100%;
-  height: 112px;
-  object-fit: contain;
-  background: #fff;
-  padding: 10px;
-}
-.supporter-logo-card:hover { color: #eec341; }
-@media (max-width: 800px), (hover: none), (pointer: coarse) {
-  .supporter-logo-disclosure { display: block; padding: 18px 5vw 0; }
-}
-@media (max-width: 520px) {
-  .supporter-logo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-}
 @media (prefers-reduced-motion: reduce) {
   .sponsor-preview { transition: none; transform: translate(-50%, -50%); }
   .sponsor-preview.is-visible { transform: translate(-50%, -50%); }
