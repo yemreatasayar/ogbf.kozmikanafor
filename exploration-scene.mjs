@@ -38,9 +38,9 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
   canvas.style.imageRendering = 'auto';
   let width = 1, height = 1, paddingX = 0, paddingY = 0, frame = 0, previous = 0, elapsed = 0;
   let alive = true, horizontalOffset = 0, mode = 'pointer';
-  let introStarted, ready = false, exitStarted, onExit;
+  let introStarted, ready = false, exitStarted, onExit, onReveal, revealed = false;
   let shipArrival = 0, exitView;
-  const introDuration = 1.85, exitDuration = 2.5;
+  const introDuration = 1.85, exitDuration = 2.5, revealDuration = .95;
   let bank = 0, pitch = 0, boost = 0, targetBank = 0, targetPitch = 0;
   const pose = { bank: 0, pitch: 0, boost: 0, cameraBoost: 0, rcsX: 0, rcsY: 0,
     cloudLight: 0, warmCloud: false, viewX: 0, viewY: 0, rcsTrail: [], nextPuff: 0 };
@@ -154,7 +154,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     ctx.drawImage(planet, -span / 2, -span / 2, span, span);
     ctx.restore();
   }
-  function drawDust(dt) {
+  function drawDust(dt, opacity) {
     const focal = Math.min(width, height) * .74;
     ctx.fillStyle = '#a9b7eb';
     for (const mote of dust) {
@@ -169,7 +169,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       const x = mote.x * focal / mote.z, y = mote.y * focal / mote.z;
       const near = 1 - clamp(mote.z / 4, 0, 1);
       const fade = clamp((mote.z - .16) / .4, 0, 1);
-      ctx.globalAlpha = near * fade * (.18 + mote.shade * .42);
+      ctx.globalAlpha = opacity * near * fade * (.18 + mote.shade * .42);
       const size = near > .8 && mote.shade > .45 ? 2 : 1;
       ctx.fillRect(Math.round(x), Math.round(y), size, size);
     }
@@ -202,7 +202,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     ctx.rotate(.20 + progress * .31);
     ctx.drawImage(satellite, -size / 2, -size * .23, size, size * .46);
     const glint = Math.max(0, 1 - Math.abs(progress - .60) / .11);
-    ctx.globalAlpha = glint * .60;
+    ctx.globalAlpha *= glint * .60;
     ctx.fillStyle = '#a8a4bf';
     ctx.fillRect(-size * .10, -size * .13, size * .17, 1);
     ctx.restore();
@@ -228,7 +228,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     ctx.restore();
   }
 
-  function drawPassingCloud(foreground) {
+  function drawPassingCloud(foreground, opacity) {
     // The softer front layer arrives after the distant sheet. Its scale and
     // lateral travel increase together as the ship cuts across the cloud bank.
     const t = foreground ? (progress - .24) / .76 : progress;
@@ -250,7 +250,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-pass.side * .19 - bank * .035);
-    ctx.globalAlpha = visibility * (foreground ? .73 : .92);
+    ctx.globalAlpha = opacity * visibility * (foreground ? .73 : .92);
     // Soften the enlarged gas layer without filtering the sky or the ship.
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(sprite, -size / 2, -cloudHeight / 2, size, cloudHeight);
@@ -287,7 +287,10 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     const intro = Math.min(1, (now - introStarted) / (introDuration * 1000));
     const leaving = Boolean(onExit);
     if (leaving) exitStarted ??= now;
-    const outro = leaving ? Math.min(1, (now - exitStarted) / (exitDuration * 1000)) : 0;
+    const exitTime = leaving ? (now - exitStarted) / 1000 : 0;
+    const outro = Math.min(1, exitTime / exitDuration);
+    const fade = Math.min(1, outro / .63);
+    const objectsOpacity = 1 - fade * fade * (3 - 2 * fade);
     if (!entering && !leaving) elapsed += dt;
     if (entering && intro === 1) { ready = true; onReady(); }
     const settle = outro * outro * (3 - 2 * outro);
@@ -336,7 +339,8 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       horizontalOffset = bank * width * .035;
       pose.cameraBoost = exitView.zoom * (1 - settle);
       if (pass) {
-        progress = exitView.progress + (1 - exitView.progress) * Math.min(1, (outro / .67) ** 2);
+        const pace = pass.type === 'planet' || pass.type === 'cloud' ? speed : 1;
+        progress += dt * pace / pass.duration;
         if (progress >= 1) pass = undefined;
       }
     } else if (!entering) {
@@ -358,23 +362,29 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       const envelope = clamp(Math.min(time / star.rise, (star.rise + star.fall - time) / star.fall), 0, 1);
       const pulse = star.peak * envelope * envelope * (3 - 2 * envelope);
       const x = skyX + star.x * skyWidth, y = skyY + star.y * skyHeight;
-      ctx.globalAlpha = pulse * .54;
+      ctx.globalAlpha = objectsOpacity * pulse * .54;
       ctx.fillStyle = '#9ba9f3';
       ctx.fillRect(x - starUnit * 1.5, y - starUnit * .32, starUnit * 3, starUnit * .64);
       ctx.fillRect(x - starUnit * .32, y - starUnit * 1.5, starUnit * .64, starUnit * 3);
-      ctx.globalAlpha = .15 + pulse * .86;
+      ctx.globalAlpha = objectsOpacity * (.15 + pulse * .86);
       ctx.fillStyle = '#fff6e8';
       ctx.fillRect(x - starUnit / 2, y - starUnit / 2, starUnit, starUnit);
     }
     ctx.globalAlpha = 1;
-    drawDust(dt * (1 - settle));
+    drawDust(dt * (1 - settle), objectsOpacity);
+    ctx.globalAlpha = objectsOpacity;
     if (pass?.type === 'satellite') drawSatellite();
     if (pass?.type === 'planet') drawPlanet(dt);
     ctx.restore();
     const cloud = pass?.type === 'cloud';
-    if (cloud) drawPassingCloud(false);
-    if (pass?.type === 'asteroid') drawAsteroid();
-    pose.cloudLight = cloud ? clamp(1 - Math.abs(progress - .67) / .31, 0, 1) : 0;
+    if (cloud && objectsOpacity > 0) drawPassingCloud(false, objectsOpacity);
+    if (pass?.type === 'asteroid' && objectsOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = objectsOpacity;
+      drawAsteroid();
+      ctx.restore();
+    }
+    pose.cloudLight = cloud ? objectsOpacity * clamp(1 - Math.abs(progress - .67) / .31, 0, 1) : 0;
     pose.warmCloud = cloud && pass.warm;
     pose.viewX = viewX;
     pose.viewY = viewY;
@@ -390,21 +400,26 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     }
     pose.verticalOffset = shipArrival * height;
     drawShip(ctx, width, height, horizontalOffset, (now - introStarted) / 1000, pose);
-    if (cloud) drawPassingCloud(true);
-    if (leaving && outro === 1) { onExit(); return; }
+    if (cloud && objectsOpacity > 0) drawPassingCloud(true, objectsOpacity);
+    if (leaving && outro === 1 && !revealed) {
+      revealed = true;
+      onReveal();
+    }
+    if (leaving && exitTime >= exitDuration + revealDuration) { onExit(); return; }
     frame = requestAnimationFrame(render);
   }
   frame = requestAnimationFrame(render);
   return {
-    exit(done) {
+    exit(reveal, done) {
       if (onExit) return;
-      exitView = { x: viewX, y: viewY, bank, pitch, zoom: pose.cameraBoost, progress,
+      exitView = { x: viewX, y: viewY, bank, pitch, zoom: pose.cameraBoost,
         arrival: shipArrival, boost: pose.boost };
       keys.clear();
       thrustInputs.clear();
       targetBank = targetPitch = 0;
       pose.rcsX = pose.rcsY = 0;
       pose.rcsTrail.length = 0;
+      onReveal = reveal;
       onExit = done;
     },
     setPointer(clientX, clientY) {

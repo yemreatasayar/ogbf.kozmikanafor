@@ -6,7 +6,11 @@
   color: #f5f1e7; background: #080c22;
 }
 .exploration.is-visible { opacity: 1; }
-.exploration.is-closing { opacity: 0; transition: opacity 1.45s .95s ease-in-out; }
+.exploration.is-revealing { opacity: 0; transition: opacity .9s ease-in-out; }
+.exploration-returning:not(.exploration-banner-revealing)
+  :is(.hero-copy, .hero-art-frame .cloud, .hero-art-frame .festival-logo, .hero-art-frame .hero-telescope) {
+  visibility: hidden;
+}
 .exploration-hint, .exploration-touch-hint { opacity: 0; transition: opacity .65s ease; }
 .exploration.is-visible:not(.is-closing) :is(.exploration-hint, .exploration-touch-hint) {
   opacity: 1; transition-delay: .5s;
@@ -61,7 +65,7 @@
 }
 
 /* Tab leaves flight before the browser advances focus into the restored header. */
-.exploration-returning .site-header { transition: background-color .22s ease, transform 1.15s .85s cubic-bezier(.22, 1, .36, 1); }
+.exploration-returning .site-header { transition: background-color .22s ease, transform 1.15s .35s cubic-bezier(.22, 1, .36, 1); }
 .exploration-active .site-header { will-change: transform; }
 .exploration-entered .site-header {
   transform: translateY(calc(-100% - 4px));

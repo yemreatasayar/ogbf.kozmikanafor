@@ -87,10 +87,10 @@ function setFlight(on) {
 }
 function finishStop() {
   scene?.destroy(); scene = null;
-  overlay.classList.remove('is-visible', 'is-closing');
+  overlay.classList.remove('is-visible', 'is-closing', 'is-revealing');
   overlay.hidden = true; card.hidden = true;
   setFlight(false); state = 'idle';
-  document.documentElement.classList.remove('exploration-entered', 'exploration-returning');
+  document.documentElement.classList.remove('exploration-entered', 'exploration-returning', 'exploration-banner-revealing');
   wasEligible = false;
   recheck();
 }
@@ -108,7 +108,10 @@ function stop(smooth = false) {
     document.documentElement.classList.add('exploration-returning');
     document.documentElement.classList.remove('exploration-entered');
     overlay.classList.add('is-closing');
-    scene.exit(finishStop);
+    scene.exit(() => {
+      document.documentElement.classList.add('exploration-banner-revealing');
+      overlay.classList.add('is-revealing');
+    }, finishStop);
   } else finishStop();
 }
 function schedule() {
@@ -136,7 +139,7 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261119-transition');
+    const module = await import('./exploration-scene.mjs?v=20261119-fade-exit');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;
