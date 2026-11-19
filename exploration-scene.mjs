@@ -1,6 +1,6 @@
 import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
-import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid } from './exploration-pixel-art.mjs?v=20261119-sequence';
+import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid } from './exploration-pixel-art.mjs?v=20261119-orbit';
 
 const boostLimit = 2;
 const boostImpulse = .22;
@@ -10,7 +10,7 @@ const leftCloud = { type: 'cloud', duration: 20, side: -1, warm: false, seed: 92
 const rightCloud = { type: 'cloud', duration: 20, side: 1, warm: false, seed: 673 };
 const asteroid = { type: 'asteroid', duration: 8.7 };
 const openingPasses = [
-  { type: 'satellite', gap: 10, duration: 29 },
+  { type: 'satellite', gap: 10, duration: 29 / 1.2 },
   { ...warmCloud, gap: 3 },
   { type: 'planet', gap: 3, duration: 42, variant: 'rocky' },
   { ...asteroid, gap: 3, rock: 0 },
@@ -38,7 +38,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
   canvas.style.imageRendering = 'auto';
   let width = 1, height = 1, paddingX = 0, paddingY = 0, frame = 0, previous = 0, elapsed = 0;
   let alive = true, horizontalOffset = 0, mode = 'pointer';
-  let introStarted, ready = false, exitStarted, onExit, onReveal, revealed = false;
+  let introStarted, ready = false, exitTime = 0, onExit, onReveal, revealed = false;
   let shipArrival = 0, exitView;
   const introDuration = 1.85, exitDuration = 2.5, revealDuration = .95;
   let bank = 0, pitch = 0, boost = 0, targetBank = 0, targetPitch = 0;
@@ -196,7 +196,8 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     const exitX = 1.06 + height / width * .03;
     const x = width * (satelliteEntryX + progress * (exitX - satelliteEntryX));
     const y = height * (-.20 + .14 * progress - .04 * Math.sin(progress * Math.PI));
-    const size = Math.min(width, height) * .055;
+    const approach = Math.min(1, progress / .60);
+    const size = Math.min(width, height) * .055 * (1 + .70 * approach ** 1.25);
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(.20 + progress * .31);
@@ -275,6 +276,11 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
 
   function render(now) {
     if (!alive) return;
+    if (onExit && document.hidden) {
+      previous = 0;
+      frame = requestAnimationFrame(render);
+      return;
+    }
     if (!sky) { frame = requestAnimationFrame(render); return; }
     if (ambient && previous && now - previous < 30) {
       frame = requestAnimationFrame(render);
@@ -286,8 +292,9 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     const entering = !ready && !onExit;
     const intro = Math.min(1, (now - introStarted) / (introDuration * 1000));
     const leaving = Boolean(onExit);
-    if (leaving) exitStarted ??= now;
-    const exitTime = leaving ? (now - exitStarted) / 1000 : 0;
+    // Hidden tabs may suspend RAF. Only advance the departure while visible
+    // so the first frame after returning is still part of the transition.
+    if (leaving) exitTime += dt;
     const outro = Math.min(1, exitTime / exitDuration);
     const fade = Math.min(1, outro / .63);
     const objectsOpacity = 1 - fade * fade * (3 - 2 * fade);
@@ -419,9 +426,11 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       targetBank = targetPitch = 0;
       pose.rcsX = pose.rcsY = 0;
       pose.rcsTrail.length = 0;
+      previous = 0;
       onReveal = reveal;
       onExit = done;
     },
+    resetFrameClock() { previous = 0; },
     setPointer(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width) return;

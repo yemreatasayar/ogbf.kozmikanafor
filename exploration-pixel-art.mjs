@@ -40,7 +40,7 @@ function pixel(data, index, [r, g, b], alpha = 255) {
 const deepSkyObjects = [
   { x: -.655, y: -.10, rx: .14, ry: .089, angle: .42, spiral: true,
     outer: [84, 109, 160], inner: [236, 96, 60], seed: 125 },
-  { x: .698, y: .03, rx: .102, ry: .066, angle: -.39, spiral: true, intensity: .73,
+  { x: .698, y: -.075, rx: .051, ry: .033, angle: -.39, spiral: true, intensity: .73,
     outer: [47, 155, 219], inner: [218, 91, 164], seed: 743 },
   { x: .12, y: -.632, rx: .204, ry: .14, angle: .09, spiral: false,
     outer: [109, 74, 183], inner: [253, 119, 113], seed: 579 },

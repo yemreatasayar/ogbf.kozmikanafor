@@ -30,12 +30,13 @@
   text-align: right; font-size: 11px; letter-spacing: .04em;
 }
 .exploration-card {
-  top: 24px; left: var(--exploration-text-inset); right: auto; width: min(324px, 36%);
+  top: 24px; left: var(--exploration-text-inset); right: auto; width: min(372.6px, 41.4%);
   padding: 15px 17px; border-radius: 12px;
-  background: rgba(0, 0, 0, .32725);
+  background: transparent;
+  box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .58);
   color: #e3e6f1; font-size: 12.1px; text-align: left;
-  animation: exploration-card-in 1.35s ease-in-out both,
-    exploration-card-out var(--card-exit-duration, 1350ms) var(--card-reading-duration, 12s) ease-in-out forwards;
+  animation: exploration-card-in .8s ease-in-out both,
+    exploration-card-out var(--card-exit-duration, 800ms) var(--card-reading-duration, 12s) ease-in-out forwards;
 }
 .exploration-card[hidden] { display: none; }
 @keyframes exploration-card-in {
@@ -93,7 +94,7 @@
 .exploration-tilt { top: 76px; }
 .exploration-touch-hint { position: absolute; top: 132px; right: 5%; margin: 0; color: #eef0fc; font-size: 12px; pointer-events: none; }
 .is-tablet .exploration-hint { display: none; }
-.is-tablet .exploration-card { top: 76px; left: 5%; width: min(300px, 47%); }
+.is-tablet .exploration-card { top: 76px; left: 5%; width: min(345px, 54%); }
 .exploration-tilt[hidden] + .exploration-touch-hint { top: 76px; }
 .exploration-card-title {
   display: block;
@@ -103,3 +104,8 @@
   line-height: 1.35;
 }
 .exploration-card-text { margin: 0; font-weight: 400; }
+
+@media (hover: hover) and (pointer: fine) {
+  .exploration-active body,
+  .exploration-active .exploration:not(.is-tablet) { cursor: none; }
+}

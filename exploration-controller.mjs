@@ -13,7 +13,7 @@ const card = overlay.querySelector('.exploration-card');
 const tiltButton = overlay.querySelector('.exploration-tilt');
 const touchHint = overlay.querySelector('.exploration-touch-hint');
 const cardReadingMs = 12000;
-const cardExitMs = 1350;
+const cardExitMs = 800;
 card.style.setProperty('--card-reading-duration', `${cardReadingMs}ms`);
 card.style.setProperty('--card-exit-duration', `${cardExitMs}ms`);
 const cardTitle = card.querySelector('.exploration-card-title');
@@ -32,6 +32,7 @@ let state = 'idle', scene = null, wasEligible = false, tabletSession = false;
 let windowFocused = document.hasFocus(), pageActive = true;
 let tiltOrigin, touchStart, motionAllowed = false;
 let cardsRequest;
+let pausedExitAnimations = [];
 
 function steerFromTilt(event) {
   if (state !== 'active' || !tabletSession || !Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return;
@@ -63,8 +64,8 @@ async function enableTilt() {
 function overlapsViewport(rect) {
   return rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
 }
-function eligible() {
-  if ((!desktop.matches && !isTablet()) || reduced.matches || document.hidden || !pageActive || !windowFocused || header.classList.contains('is-menu-open') ||
+function eligible({ ignoreFocus = false } = {}) {
+  if ((!desktop.matches && !isTablet()) || reduced.matches || (!ignoreFocus && (document.hidden || !windowFocused)) || !pageActive || header.classList.contains('is-menu-open') ||
       header.contains(document.activeElement) ||
       (desktop.matches && overlapsViewport(title.getBoundingClientRect()))) return false;
   const f = frame.getBoundingClientRect(), s = sky.getBoundingClientRect(), m = mountains.getBoundingClientRect();
@@ -86,6 +87,7 @@ function setFlight(on) {
   document.dispatchEvent(new Event('explorationchange'));
 }
 function finishStop() {
+  pausedExitAnimations = [];
   scene?.destroy(); scene = null;
   overlay.classList.remove('is-visible', 'is-closing', 'is-revealing');
   overlay.hidden = true; card.hidden = true;
@@ -121,7 +123,8 @@ function schedule() {
 function recheck() {
   const nowEligible = eligible();
   const tablet = !desktop.matches && isTablet();
-  if (state !== 'idle' && (!nowEligible || (tabletSession !== tablet))) { wasEligible = false; stop(); return; }
+  const canContinue = state === 'closing' ? eligible({ ignoreFocus: true }) : nowEligible;
+  if (state !== 'idle' && (!canContinue || (tabletSession !== tablet))) { wasEligible = false; stop(); return; }
   if (state === 'entering' || state === 'active' || state === 'closing') positionOverlay();
   if (state === 'idle' && nowEligible !== wasEligible) {
     wasEligible = nowEligible;
@@ -139,7 +142,7 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261119-fade-exit');
+    const module = await import('./exploration-scene.mjs?v=20261119-orbit');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;
@@ -272,9 +275,33 @@ addEventListener('keyup', event => {
 addEventListener('resize', () => { recheck(); if (state === 'idle') schedule(); }, { passive: true });
 addEventListener('focusin', recheck);
 addEventListener('focusout', () => queueMicrotask(recheck));
-addEventListener('blur', () => { shortcutKeys.clear(); windowFocused = false; if (state !== 'idle') stop(); else { wasEligible = false; schedule(); } });
+function leaveOnFocusLoss() {
+  shortcutKeys.clear();
+  if (state === 'active' || state === 'entering') stop(true);
+  else if (state === 'loading') stop();
+  else recheck();
+}
+
+addEventListener('blur', () => {
+  windowFocused = false;
+  leaveOnFocusLoss();
+});
 addEventListener('focus', () => { windowFocused = true; recheck(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) shortcutKeys.clear(); recheck(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    leaveOnFocusLoss();
+    if (state === 'closing') {
+      pausedExitAnimations = [...header.getAnimations(), ...overlay.getAnimations()];
+      for (const animation of pausedExitAnimations) animation.pause();
+    }
+  } else {
+    windowFocused = document.hasFocus();
+    scene?.resetFrameClock();
+    for (const animation of pausedExitAnimations) animation.play();
+    pausedExitAnimations = [];
+    recheck();
+  }
+});
 desktop.addEventListener('change', recheck);
 touch.addEventListener('change', recheck);
 tiltButton.addEventListener('click', enableTilt);
