@@ -27,7 +27,7 @@ const arrows = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const flightKeys = new Set([...arrows, 'Shift']);
 const shortcutKeys = new Set();
 const editableTarget = target => target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]');
-let timer = 0, cardTimer = 0, exitTimer = 0, generation = 0;
+let timer = 0, cardTimer = 0, generation = 0;
 let state = 'idle', scene = null, wasEligible = false, tabletSession = false;
 let windowFocused = document.hasFocus(), pageActive = true;
 let tiltOrigin, touchStart, motionAllowed = false;
@@ -86,10 +86,11 @@ function setFlight(on) {
   document.dispatchEvent(new Event('explorationchange'));
 }
 function finishStop() {
-  clearTimeout(exitTimer); exitTimer = 0;
+  scene?.destroy(); scene = null;
+  overlay.classList.remove('is-visible', 'is-closing');
   overlay.hidden = true; card.hidden = true;
   setFlight(false); state = 'idle';
-  document.documentElement.classList.remove('exploration-entered');
+  document.documentElement.classList.remove('exploration-entered', 'exploration-returning');
   wasEligible = false;
   recheck();
 }
@@ -100,14 +101,14 @@ function stop(smooth = false) {
   shortcutKeys.clear();
   touchStart = tiltOrigin = undefined;
   removeEventListener('deviceorientation', steerFromTilt);
-  clearTimeout(timer); clearTimeout(cardTimer); clearTimeout(exitTimer);
-  timer = cardTimer = exitTimer = 0;
-  scene?.destroy(); scene = null;
-  overlay.classList.remove('is-visible');
-  document.documentElement.classList.remove('exploration-entered');
-  if (smooth && state === 'active' && !overlay.hidden) {
+  clearTimeout(timer); clearTimeout(cardTimer);
+  timer = cardTimer = 0;
+  if (smooth && (state === 'active' || state === 'entering') && overlay.classList.contains('is-visible')) {
     state = 'closing';
-    exitTimer = setTimeout(finishStop, 1500);
+    document.documentElement.classList.add('exploration-returning');
+    document.documentElement.classList.remove('exploration-entered');
+    overlay.classList.add('is-closing');
+    scene.exit(finishStop);
   } else finishStop();
 }
 function schedule() {
@@ -118,7 +119,7 @@ function recheck() {
   const nowEligible = eligible();
   const tablet = !desktop.matches && isTablet();
   if (state !== 'idle' && (!nowEligible || (tabletSession !== tablet))) { wasEligible = false; stop(); return; }
-  if (state === 'active' || state === 'closing') positionOverlay();
+  if (state === 'entering' || state === 'active' || state === 'closing') positionOverlay();
   if (state === 'idle' && nowEligible !== wasEligible) {
     wasEligible = nowEligible;
     schedule();
@@ -135,13 +136,16 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261119-mouse');
+    const module = await import('./exploration-scene.mjs?v=20261119-transition');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;
-    scene = module.startScene(canvas, { ambient: tablet });
+    scene = module.startScene(canvas, { ambient: tablet, onReady() {
+      if (token !== generation || state !== 'entering') return;
+      state = 'active';
+    } });
     if (!eligible()) { stop(); return; }
-    state = 'active'; setFlight(true);
+    state = 'entering'; setFlight(true);
     const orientation = window.DeviceOrientationEvent;
     const permissionNeeded = typeof orientation?.requestPermission === 'function' && !motionAllowed;
     tiltButton.hidden = !tablet || !permissionNeeded;
@@ -165,7 +169,7 @@ async function open() {
     if (siteSettings.explorationFactsEndpoint) {
       cardsRequest = new AbortController();
       readPublishedCards(cardsRequest.signal).then(published => {
-        if (!published || token !== generation || state !== 'active') return;
+        if (!published || token !== generation) return;
         source = published;
         cards = [];
         const current = source.find(item => item.id === lastCard?.id);
@@ -185,7 +189,7 @@ async function open() {
     };
 
     requestAnimationFrame(() => {
-      if (token !== generation || state !== 'active') return;
+      if (token !== generation || state !== 'entering') return;
       if (!eligible()) { stop(); return; }
       overlay.classList.add('is-visible');
       if (!tablet) document.documentElement.classList.add('exploration-entered');
@@ -240,15 +244,19 @@ addEventListener('keydown', event => {
     }
     if (state === 'loading') return;
   }
-  if ((state === 'active' || state === 'closing') && event.key === 'Tab') {
+  if ((state === 'entering' || state === 'active' || state === 'closing') && event.key === 'Tab') {
     stop(); return;
   }
   if (state !== 'idle' && event.key === 'Escape') {
-    event.preventDefault(); event.stopImmediatePropagation(); stop(state === 'active'); return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (state !== 'closing') stop(true);
+    return;
   }
   if (state === 'loading') { activity(); return; }
-  if ((state === 'active' || state === 'closing') && !tabletSession && flightKeys.has(event.key)) {
-    event.preventDefault(); event.stopImmediatePropagation(); scene?.keyDown(event.key, event.code); return;
+  if (state !== 'idle' && !tabletSession && flightKeys.has(event.key)) {
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (state === 'active') scene?.keyDown(event.key, event.code);
+    return;
   }
   activity();
 }, true);

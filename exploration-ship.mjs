@@ -507,13 +507,13 @@ function addTrailPuffs(trail, jets, pulse, pose, time, x, y, scale) {
 
 export function drawShip(ctx,width,height,horizontalOffset,elapsedSeconds,pose={}){
   if(!plumeFrames) plumeFrames=buildPlumes();
-  const { bank = 0, pitch = 0, boost = 0, cameraBoost = boost, rcsX = 0, rcsY = 0, cloudLight = 0, warmCloud = false } = pose;
+  const { bank = 0, pitch = 0, boost = 0, cameraBoost = boost, rcsX = 0, rcsY = 0, cloudLight = 0, warmCloud = false, verticalOffset = 0 } = pose;
   const scale = .8 * (1 - cameraBoost * .055) * Math.min(width * .48, height * 1.06) / 395;
   renderPose(bank, pitch, scale, boost, cloudLight, warmCloud);
   const plumeLength = boost > .025 ? 24 + boost * 60 : 0;
   const nozzleBottom=Math.max(nozzles[0].py,nozzles[1].py)+plumeLength;
   const desiredY = height * .72 - pitch * height * .085 - cameraBoost * height * .013;
-  const centerY = Math.min(desiredY, height - scale * Math.max(modelBottom, nozzleBottom) - 8);
+  const centerY = Math.min(desiredY, height - scale * Math.max(modelBottom, nozzleBottom) - 8) + verticalOffset;
   const yaw = yawJets[Number(rcsX > 0)];
   const pitchPair = pitchJets[Number(rcsY > 0)];
   const centerX = width / 2 + horizontalOffset - scale * modelMidX;

@@ -1,4 +1,4 @@
-import { drawShip } from './exploration-ship.mjs?v=20261119-sequence';
+import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
 import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid } from './exploration-pixel-art.mjs?v=20261119-sequence';
 
@@ -30,7 +30,7 @@ const laterPasses = [
   { ...asteroid, gap: 45, rock: 2 }
 ];
 
-export function startScene(canvas, { ambient = false } = {}) {
+export function startScene(canvas, { ambient = false, onReady = () => {} } = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D is unavailable');
   const bannerSky = document.querySelector('.hero-sky');
@@ -38,6 +38,9 @@ export function startScene(canvas, { ambient = false } = {}) {
   canvas.style.imageRendering = 'auto';
   let width = 1, height = 1, paddingX = 0, paddingY = 0, frame = 0, previous = 0, elapsed = 0;
   let alive = true, horizontalOffset = 0, mode = 'pointer';
+  let introStarted, ready = false, exitStarted, onExit;
+  let shipArrival = 0, exitView;
+  const introDuration = 1.85, exitDuration = 2.5;
   let bank = 0, pitch = 0, boost = 0, targetBank = 0, targetPitch = 0;
   const pose = { bank: 0, pitch: 0, boost: 0, cameraBoost: 0, rcsX: 0, rcsY: 0,
     cloudLight: 0, warmCloud: false, viewX: 0, viewY: 0, rcsTrail: [], nextPuff: 0 };
@@ -278,7 +281,16 @@ export function startScene(canvas, { ambient = false } = {}) {
       return;
     }
     const dt = previous ? Math.min((now - previous) / 1000, .05) : 0;
-    previous = now; elapsed += dt;
+    previous = now;
+    introStarted ??= now;
+    const entering = !ready && !onExit;
+    const intro = Math.min(1, (now - introStarted) / (introDuration * 1000));
+    const leaving = Boolean(onExit);
+    if (leaving) exitStarted ??= now;
+    const outro = leaving ? Math.min(1, (now - exitStarted) / (exitDuration * 1000)) : 0;
+    if (!entering && !leaving) elapsed += dt;
+    if (entering && intro === 1) { ready = true; onReady(); }
+    const settle = outro * outro * (3 - 2 * outro);
     lateralTravelX += dt * velocityX;
     lateralTravelY += dt * velocityY;
     if (mode === 'keys') {
@@ -315,7 +327,21 @@ export function startScene(canvas, { ambient = false } = {}) {
     headingY = clamp(headingY + pitch * dt * .15, -.28, .28);
     viewX += ((headingX + bank * .018) * width - viewX) * response;
     viewY += ((headingY + pitch * .018) * height - viewY) * response;
-    updatePass(dt);
+    if (leaving) {
+      viewX = exitView.x * (1 - settle);
+      viewY = exitView.y * (1 - settle);
+      bank = exitView.bank * (1 - settle);
+      pitch = exitView.pitch * (1 - settle);
+      pose.bank = bank; pose.pitch = pitch;
+      horizontalOffset = bank * width * .035;
+      pose.cameraBoost = exitView.zoom * (1 - settle);
+      if (pass) {
+        progress = exitView.progress + (1 - exitView.progress) * Math.min(1, (outro / .67) ** 2);
+        if (progress >= 1) pass = undefined;
+      }
+    } else if (!entering) {
+      updatePass(dt);
+    }
     const zoom = 1 - pose.cameraBoost * .055;
     ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
     ctx.save();
@@ -341,7 +367,7 @@ export function startScene(canvas, { ambient = false } = {}) {
       ctx.fillRect(x - starUnit / 2, y - starUnit / 2, starUnit, starUnit);
     }
     ctx.globalAlpha = 1;
-    drawDust(dt);
+    drawDust(dt * (1 - settle));
     if (pass?.type === 'satellite') drawSatellite();
     if (pass?.type === 'planet') drawPlanet(dt);
     ctx.restore();
@@ -352,12 +378,35 @@ export function startScene(canvas, { ambient = false } = {}) {
     pose.warmCloud = cloud && pass.warm;
     pose.viewX = viewX;
     pose.viewY = viewY;
-    drawShip(ctx, width, height, horizontalOffset, elapsed, pose);
+    if (entering) {
+      shipArrival = .78 * (1 - intro) ** 2.45;
+      pose.boost = Math.min(1, intro * 12) * Math.min(1, (1 - intro) / .27);
+    } else if (leaving) {
+      const departure = Math.max(0, (outro - .10) / .90);
+      shipArrival = exitView.arrival + (.84 - exitView.arrival) * departure ** 1.45;
+      pose.boost = exitView.boost * (1 - Math.min(1, outro * 3));
+    } else {
+      shipArrival = 0;
+    }
+    pose.verticalOffset = shipArrival * height;
+    drawShip(ctx, width, height, horizontalOffset, (now - introStarted) / 1000, pose);
     if (cloud) drawPassingCloud(true);
+    if (leaving && outro === 1) { onExit(); return; }
     frame = requestAnimationFrame(render);
   }
   frame = requestAnimationFrame(render);
   return {
+    exit(done) {
+      if (onExit) return;
+      exitView = { x: viewX, y: viewY, bank, pitch, zoom: pose.cameraBoost, progress,
+        arrival: shipArrival, boost: pose.boost };
+      keys.clear();
+      thrustInputs.clear();
+      targetBank = targetPitch = 0;
+      pose.rcsX = pose.rcsY = 0;
+      pose.rcsTrail.length = 0;
+      onExit = done;
+    },
     setPointer(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width) return;
