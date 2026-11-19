@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="revision-type.css?v=20261112-alignment">
     <link rel="stylesheet" href="revision-supporters.css?v=20261114-mobile">
     <link rel="stylesheet" href="revision-hero.css?v=20261114-mobile">
-    <script type="module" src="main.js?v=20261114-mobile"></script>
+    <link rel="stylesheet" href="exploration.css?v=20261119-passages">
+    <script type="module" src="main.js?v=20261119-mouse"></script>
   </head>
   <body>
     <a class="skip-link" href="#top">İçeriğe geç</a>
@@ -31,8 +32,8 @@
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-stage">
-        <div class="hero-art" aria-hidden="true">
-          <div class="hero-art-frame">
+        <div class="hero-art">
+          <div class="hero-art-frame" aria-hidden="true">
           <img class="hero-sky" width="3840" height="2160" fetchpriority="high" src="assets/hero/sky.webp?v=20261111-sky-32" alt="">
           <img class="cloud cloud-1" src="assets/hero/cloud-1.webp?v=20261111-assets-22" alt="">
           <img class="cloud cloud-2" src="assets/hero/cloud-2.webp?v=20261111-assets-22" alt="">
@@ -45,6 +46,17 @@
           <img class="festival-logo" width="790" height="954" src="assets/hero/festival-logo.webp?v=20261030-mobile-7" alt="Olimpos Gökyüzü ve Bilim Festivali logosu">
           <img class="hero-mountains" src="assets/hero/mountains.webp?v=20261111-mountains-31" alt="">
           <img class="hero-telescope" width="210" height="390" src="assets/hero/telescope.svg?v=20261030-mobile-7" alt="">
+          </div>
+          <div class="exploration" hidden>
+            <button class="exploration-tilt exploration-button" type="button" hidden>Eğim kontrolünü aç</button>
+            <p class="exploration-touch-hint" hidden>Çıkmak için dokun veya kaydır</p>
+            <canvas class="exploration-canvas" aria-hidden="true"></canvas>
+            <p class="exploration-hint">Yön: Fare / ↑ ↓ ← →<br>Hızlanma: Shift • Çıkış: Esc</p>
+            <div class="exploration-card" hidden>
+              <strong class="exploration-card-title"></strong>
+              <div class="exploration-card-progress" aria-hidden="true"></div>
+              <p class="exploration-card-text"></p>
+            </div>
           </div>
         </div>
         <div class="hero-copy">

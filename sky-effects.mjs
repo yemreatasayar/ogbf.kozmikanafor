@@ -23,9 +23,9 @@ let meteorCount = 0;
 const randomInterval = () => 120000 + Math.random() * 60000;
 function scheduleMeteor() {
   clearTimeout(timer);
-  if (reduced.matches || document.hidden || !heroVisible) return;
+  if (reduced.matches || document.hidden || !heroVisible || document.documentElement.classList.contains('exploration-active')) return;
   timer = setTimeout(() => {
-    if (!reduced.matches && !document.hidden && heroVisible) {
+    if (!reduced.matches && !document.hidden && heroVisible && !document.documentElement.classList.contains('exploration-active')) {
       meteor = document.createElement('span');
       meteor.className = 'sky-meteor';
       meteor.style.left = `${22 + Math.random() * 57}%`;
@@ -38,7 +38,7 @@ function scheduleMeteor() {
   }, meteorCount === 0 ? 15000 : meteorCount === 1 ? 30000 : randomInterval());
 }
 function syncEffects() {
-  const active = heroVisible && !document.hidden && !reduced.matches;
+  const active = heroVisible && !document.hidden && !reduced.matches && !document.documentElement.classList.contains('exploration-active');
   sky.classList.toggle('is-active', active);
   if (!active) { meteor?.remove(); meteor = null; }
   scheduleMeteor();
@@ -48,6 +48,7 @@ new IntersectionObserver(entries => {
   syncEffects();
 }).observe(skyPhoto);
 document.addEventListener('visibilitychange', syncEffects);
+document.addEventListener('explorationchange', syncEffects);
 reduced.addEventListener('change', syncEffects);
 addEventListener('pagehide', () => { clearTimeout(timer); meteor?.remove(); });
 addEventListener('pageshow', syncEffects);

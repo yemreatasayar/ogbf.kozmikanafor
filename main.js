@@ -1,4 +1,4 @@
-import { galleryCards, featuredSupporters, marqueeSupporters, siteSettings, locationUrl } from "./content.js?v=20261030-mobile-7";
+import { galleryCards, featuredSupporters, marqueeSupporters, siteSettings, locationUrl } from "./content.js?v=20261119-cards";
 import { bindMarqueeDrag } from "./marquee-drag.mjs?v=20261104-review";
 
 const gallery = document.querySelector("#gallery-grid");
@@ -126,7 +126,7 @@ const cloudDrifts = [
 });
 let heroVisible = false;
 function syncCloudDrift() {
-  const shouldPlay = heroProgress === 1 && heroVisible && !document.hidden && !reduceMotion.matches;
+  const shouldPlay = heroProgress === 1 && heroVisible && !document.hidden && !reduceMotion.matches && !document.documentElement.classList.contains("exploration-active");
   cloudDrifts.forEach(animation => {
     if (shouldPlay && animation.playState !== 'running') animation.play();
     else if (!shouldPlay && animation.playState === 'running') animation.pause();
@@ -138,6 +138,7 @@ new IntersectionObserver(([entry]) => {
   syncCloudDrift();
 }).observe(artFrame);
 document.addEventListener('visibilitychange', syncCloudDrift);
+document.addEventListener('explorationchange', syncCloudDrift);
 function animateHeroTo(target) {
   if (reduceMotion.matches || target === heroMotionTarget) return;
   cancelAnimationFrame(heroMotionFrame);
@@ -155,6 +156,7 @@ function animateHeroTo(target) {
   heroMotionFrame = requestAnimationFrame(step);
 }
 function heroInput(direction) {
+  if (document.documentElement.classList.contains("exploration-active")) return;
   heroGestureReceived = true;
   const range = Math.min(560, Math.max(360, innerWidth * .39));
   if (direction > 0 && scrollY <= range + 24) animateHeroTo(1);
@@ -449,4 +451,6 @@ document.fonts.ready.then(updateHeroGalleryBoundary);
 addEventListener("resize", updateHeroGalleryBoundary, { passive: true });
 addEventListener("load", updateHeroGalleryBoundary, { once: true });
 
-import "./sky-effects.mjs?v=20261111-timing";
+import "./sky-effects.mjs?v=20261119-mouse";
+
+import "./exploration-controller.mjs?v=20261119-mouse";
