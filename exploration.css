@@ -15,7 +15,8 @@
 .exploration.is-visible:not(.is-closing) :is(.exploration-hint, .exploration-touch-hint) {
   opacity: 1; transition-delay: .5s;
 }
-.exploration.is-closing .exploration-card {
+.exploration.is-closing .exploration-card,
+.exploration.is-closing .exploration-sound {
   animation: none; opacity: 0; transition: opacity .4s ease;
 }
 .exploration-canvas { display: block; width: 100%; height: 100%; }
