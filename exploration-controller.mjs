@@ -207,7 +207,7 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261120-header-sound');
+    const module = await import('./exploration-scene.mjs?v=20261120-canvas-release');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;

@@ -533,6 +533,8 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
     destroy() {
       if (!alive) return;
       alive = false; keys.clear(); thrustInputs.clear(); cancelAnimationFrame(frame);
+      // Release the canvas backing store when the flight has closed.
+      canvas.width = 0; canvas.height = 0;
       bannerSky?.removeEventListener('load', resize);
       if (observer) observer.disconnect();
       else window.removeEventListener('resize', resize);
