@@ -38,9 +38,21 @@ soundButton.addEventListener('click', () => {
 launchButton.addEventListener('click', () => {
   if (state !== 'idle') return;
   launchButton.blur();
-  manualSession = true;
-  window.scrollTo({ top: 0, behavior: 'instant' });
-  requestAnimationFrame(() => open());
+  clearTimeout(timer); timer = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const started = performance.now();
+  const waitForBanner = now => {
+    if (state !== 'idle') return;
+    if (window.scrollY <= 1) {
+      manualSession = true;
+      open();
+    } else if (now - started < 5000) {
+      requestAnimationFrame(waitForBanner);
+    } else {
+      recheck();
+    }
+  };
+  requestAnimationFrame(waitForBanner);
 });
 const tiltButton = overlay.querySelector('.exploration-tilt');
 const touchHint = overlay.querySelector('.exploration-touch-hint');
