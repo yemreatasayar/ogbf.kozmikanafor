@@ -30,7 +30,8 @@ function stopMusic() {
   if (!music.paused) fadeMusic(0, () => { music.pause(); music.currentTime = 0; });
 }
 music.addEventListener('ended', () => { if (musicEnabled && state === 'active') musicRepeat = setTimeout(() => { if (musicEnabled && state === 'active') { music.currentTime = 0; music.volume = 0; music.play().then(() => fadeMusic(.65)).catch(stopMusic); } }, 2500); });
-soundButton.addEventListener('click', () => {
+soundButton.addEventListener('click', event => {
+  if (event.detail > 0) soundButton.blur();
   if (musicEnabled) { stopMusic(); return; }
   musicEnabled = true; music.volume = 0;
   music.play().then(() => { if (!musicEnabled) { music.pause(); return; } soundButton.setAttribute('aria-pressed', 'true'); soundButton.setAttribute('aria-label', 'Müziği kapat'); soundButton.querySelector('span').textContent = 'Ses kapat'; fadeMusic(.65); }).catch(stopMusic);
