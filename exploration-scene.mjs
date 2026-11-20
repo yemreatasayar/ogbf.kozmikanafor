@@ -1,5 +1,5 @@
 import { iceGiantSpriteSize } from './exploration-scale.mjs?v=20261120-scale';
-import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261120-flyby';
+import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261121-steer';
 import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
 import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid, makePixelComet } from './exploration-pixel-art.mjs?v=20261120-comet-soft';
@@ -174,8 +174,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
     const y = height * (ringed
       ? -.26 + .085 * Math.sin(Math.PI * progress) + .035 * progress
       : -.18 + .13 * path) + height * (lateralTravelY - passY) * drift;
-    const aimed = 1 - clamp(Math.hypot(x / width - velocityX / velocityZ, y / height + velocityY / velocityZ) / .34, 0, 1);
-    distance = Math.max(.23, distance - dt * speed * (21 / duration) * (.023 + aimed * .014));
+    distance = Math.max(.23, distance - dt * speed * (21 / duration) * .023);
     const farDepth = ringed ? 58 : 22;
     const nearScale = ringed ? .00112 : .0019;
     const depth = 1 + farDepth * (1 - progress) ** 3;
@@ -351,8 +350,11 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
       commandPitch = targetPitch;
     }
     const response = 1 - Math.exp(-3 * dt);
-    bank += (targetBank - bank) * response;
-    pitch += (targetPitch - pitch) * response;
+    // Ease only outward steering near the edge; steering back remains free.
+    const edgeFactor = (heading, input, limit) => input * heading > 0
+      ? clamp((limit - Math.abs(heading)) / .10, 0, 1) : 1;
+    bank += (targetBank * edgeFactor(headingX, targetBank, .29) - bank) * response;
+    pitch += (targetPitch * edgeFactor(headingY, targetPitch, .28) - pitch) * response;
     // The motor animation has its own clock. Releasing Shift or using a
     // visual-only burst cannot alter the stored velocity.
     const firing = thrustInputs.size > 0 || elapsed < flashUntil;
@@ -373,8 +375,8 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
     pose.bank = bank; pose.pitch = pitch; pose.boost = boost;
     // Input changes heading over time. Release leaves the camera looking in
     // the new direction, while the ship settles out of its banking pose.
-    headingX = clamp(headingX + bank * dt * .15, -.29, .29);
-    headingY = clamp(headingY + pitch * dt * .15, -.28, .28);
+    headingX = clamp(headingX + bank * edgeFactor(headingX, bank, .29) * dt * .15, -.29, .29);
+    headingY = clamp(headingY + pitch * edgeFactor(headingY, pitch, .28) * dt * .15, -.28, .28);
     viewX += ((headingX + bank * .018) * width - viewX) * response;
     viewY += ((headingY + pitch * .018) * height - viewY) * response;
     if (leaving) {

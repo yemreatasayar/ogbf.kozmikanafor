@@ -6,7 +6,12 @@ export function moonPairGeometry(width, height, variant, progress) {
   const unit = Math.min(width, height);
   const t = Math.max(0, Math.min(1, progress));
   const near = t * t;
-  const x = width * (.045 + .92 * t ** 2.1);
+  // Keep Saturn's system in the right-hand view for most of the encounter.
+  // Its position depends only on progress, so looking away and back never
+  // creates a different composition.
+  const x = width * (variant === 'titan'
+    ? .16 + .42 * t ** 2.1
+    : .045 + .92 * t ** 2.1);
   const y = height * (.10 + .045 * t);
   const planetSize = unit * (.055 + .48 * near);
   const moonSize = unit * (.006 + (variant === 'titan' ? .115 : .10) * near);
