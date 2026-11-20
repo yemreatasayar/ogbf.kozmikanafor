@@ -35,7 +35,13 @@ soundButton.addEventListener('click', () => {
   musicEnabled = true; music.volume = 0;
   music.play().then(() => { if (!musicEnabled) { music.pause(); return; } soundButton.setAttribute('aria-pressed', 'true'); soundButton.setAttribute('aria-label', 'Müziği kapat'); soundButton.querySelector('span').textContent = 'Ses kapat'; fadeMusic(.65); }).catch(stopMusic);
 });
-launchButton.addEventListener('click', () => { launchButton.blur(); open(); });
+launchButton.addEventListener('click', () => {
+  if (state !== 'idle') return;
+  launchButton.blur();
+  manualSession = true;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  requestAnimationFrame(() => open());
+});
 const tiltButton = overlay.querySelector('.exploration-tilt');
 const touchHint = overlay.querySelector('.exploration-touch-hint');
 const cardReadingMs = 12000;
@@ -71,7 +77,7 @@ function applyTimeRate() {
 
 const editableTarget = target => target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]');
 let timer = 0, cardTimer = 0, generation = 0;
-let state = 'idle', scene = null, wasEligible = false, tabletSession = false;
+let state = 'idle', scene = null, wasEligible = false, tabletSession = false, manualSession = false;
 let windowFocused = document.hasFocus(), pageActive = true;
 let tiltOrigin, touchStart, motionAllowed = false;
 let cardsRequest;
@@ -110,7 +116,7 @@ function overlapsViewport(rect) {
 function eligible({ ignoreFocus = false } = {}) {
   if ((!desktop.matches && !isTablet()) || reduced.matches || (!ignoreFocus && (document.hidden || !windowFocused)) || !pageActive || header.classList.contains('is-menu-open') ||
       header.contains(document.activeElement) ||
-      (desktop.matches && overlapsViewport(title.getBoundingClientRect()))) return false;
+      (!manualSession && desktop.matches && overlapsViewport(title.getBoundingClientRect()))) return false;
   const f = frame.getBoundingClientRect(), s = sky.getBoundingClientRect(), m = mountains.getBoundingClientRect();
   const ridge = m.top + m.height * .18;
   return Math.min(f.right, s.right, innerWidth) > Math.max(f.left, s.left, 0) &&
@@ -134,7 +140,7 @@ function finishStop() {
   scene?.destroy(); scene = null;
   overlay.classList.remove('is-visible', 'is-closing', 'is-revealing');
   overlay.hidden = true; card.hidden = true;
-  setFlight(false); state = 'idle';
+  setFlight(false); state = 'idle'; manualSession = false;
   document.documentElement.classList.remove('exploration-entered', 'exploration-returning', 'exploration-banner-revealing');
   wasEligible = false;
   recheck();
@@ -180,7 +186,7 @@ function recheck() {
 async function open() {
   if (state !== 'idle') return;
   clearTimeout(timer); timer = 0;
-  if (!eligible()) { wasEligible = false; recheck(); return; }
+  if (!eligible()) { manualSession = false; wasEligible = false; recheck(); return; }
   const tablet = !desktop.matches;
   tabletSession = tablet;
   touchHint.hidden = !tablet;
