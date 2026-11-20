@@ -330,7 +330,9 @@ addEventListener('pointermove', event => {
 for (const type of ['pointerdown', 'wheel', 'scroll']) addEventListener(type, () => {
   if (state === 'loading') activity();
   else if (state === 'idle') activity();
-  else if (type === 'scroll' && tabletSession) stop();
+  // A scroll means the visitor is returning to the page. Close immediately
+  // so the moving page title cannot overlap the exploration canvas.
+  else if (type === 'scroll' && (state === 'active' || state === 'entering')) stop();
   else if (type === 'scroll') recheck();
 }, { passive: true });
 addEventListener('keydown', event => {
