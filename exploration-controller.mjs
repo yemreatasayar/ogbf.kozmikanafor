@@ -1,4 +1,4 @@
-import { explorationFacts, siteSettings } from "./content.js?v=20261119-cards";
+import { explorationFacts, siteSettings } from "./content.js?v=20261120-cards";
 
 // Keep the timer continuous only while an unobscured band of sky is visible.
 const frame = document.querySelector('.hero-art-frame');
@@ -10,10 +10,37 @@ const header = document.querySelector('.site-header');
 const overlay = document.querySelector('.exploration');
 const canvas = overlay.querySelector('canvas');
 const card = overlay.querySelector('.exploration-card');
+const launchButton = document.querySelector('.exploration-launch');
+const soundButton = overlay.querySelector('.exploration-sound');
+const music = new Audio('assets/ogbf-ambient.mp3');
+music.preload = 'none';
+let musicTimer, musicRepeat, musicEnabled = false;
+function fadeMusic(target, done) {
+  clearInterval(musicTimer);
+  const from = music.volume, start = performance.now(), duration = 2500;
+  musicTimer = setInterval(() => {
+    const t = Math.min(1, (performance.now() - start) / duration);
+    music.volume = Math.max(0, Math.min(1, from + (target - from) * t));
+    if (t === 1) { clearInterval(musicTimer); done?.(); }
+  }, 40);
+}
+function stopMusic() {
+  musicEnabled = false; clearTimeout(musicRepeat);
+  soundButton.setAttribute('aria-pressed', 'false'); soundButton.setAttribute('aria-label', 'Müziği aç'); soundButton.querySelector('span').textContent = 'Ses aç';
+  if (!music.paused) fadeMusic(0, () => { music.pause(); music.currentTime = 0; });
+}
+music.addEventListener('ended', () => { if (musicEnabled && state === 'active') musicRepeat = setTimeout(() => { if (musicEnabled && state === 'active') { music.currentTime = 0; music.volume = 0; music.play().then(() => fadeMusic(.65)).catch(stopMusic); } }, 2500); });
+soundButton.addEventListener('click', () => {
+  if (musicEnabled) { stopMusic(); return; }
+  musicEnabled = true; music.volume = 0;
+  music.play().then(() => { if (!musicEnabled) { music.pause(); return; } soundButton.setAttribute('aria-pressed', 'true'); soundButton.setAttribute('aria-label', 'Müziği kapat'); soundButton.querySelector('span').textContent = 'Ses kapat'; fadeMusic(.65); }).catch(stopMusic);
+});
+launchButton.addEventListener('click', () => { launchButton.blur(); open(); });
 const tiltButton = overlay.querySelector('.exploration-tilt');
 const touchHint = overlay.querySelector('.exploration-touch-hint');
 const cardReadingMs = 12000;
 const cardExitMs = 800;
+const cardGapMs = 9000;
 card.style.setProperty('--card-reading-duration', `${cardReadingMs}ms`);
 card.style.setProperty('--card-exit-duration', `${cardExitMs}ms`);
 const cardTitle = card.querySelector('.exploration-card-title');
@@ -26,6 +53,22 @@ const isTablet = () => touch.matches && Math.min(screen.width, screen.height) >=
 const arrows = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const flightKeys = new Set([...arrows, 'Shift']);
 const shortcutKeys = new Set();
+const timeKeys = new Set();
+let fastTime = false, slowHeld = false, timeChordUsed = false;
+let setCardRate = () => {};
+const timeBadge = document.createElement('div');
+timeBadge.setAttribute('aria-live', 'polite');
+timeBadge.className = 'exploration-time-badge';
+timeBadge.hidden = true;
+overlay.append(timeBadge);
+function applyTimeRate() {
+  const rate = fastTime && !slowHeld ? 5 : 1;
+  scene?.setTimeScale(rate);
+  setCardRate(rate);
+  timeBadge.hidden = !fastTime;
+  timeBadge.textContent = slowHeld ? '1× · Space bırakılınca 5×' : '5× · Space ile normal hız';
+}
+
 const editableTarget = target => target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]');
 let timer = 0, cardTimer = 0, generation = 0;
 let state = 'idle', scene = null, wasEligible = false, tabletSession = false;
@@ -97,10 +140,13 @@ function finishStop() {
   recheck();
 }
 function stop(smooth = false) {
+  stopMusic();
   cardsRequest?.abort();
   cardsRequest = undefined;
   ++generation;
-  shortcutKeys.clear();
+  shortcutKeys.clear(); timeKeys.clear();
+  fastTime = slowHeld = timeChordUsed = false;
+  timeBadge.hidden = true; setCardRate = () => {};
   touchStart = tiltOrigin = undefined;
   removeEventListener('deviceorientation', steerFromTilt);
   clearTimeout(timer); clearTimeout(cardTimer);
@@ -142,11 +188,12 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261119-orbit');
+    const module = await import('./exploration-scene.mjs?v=20261120-header-sound');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;
-    scene = module.startScene(canvas, { ambient: tablet, onReady() {
+    let pendingFactId;
+    scene = module.startScene(canvas, { ambient: tablet, onPass(id) { pendingFactId = id; }, onReady() {
       if (token !== generation || state !== 'entering') return;
       state = 'active';
     } });
@@ -159,16 +206,25 @@ async function open() {
     let source = explorationFacts;
     let cards = [];
     let lastCard;
+    const shownIds = new Set();
     function showCard() {
       if (cards.length === 0) {
-        cards = [...source];
+        cards = source.filter(item => !shownIds.has(item.id));
+        // A new round starts only after all cards in the current source were shown.
+        if (cards.length === 0) {
+          shownIds.clear();
+          cards = [...source];
+        }
         for (let index = cards.length - 1; index > 0; index--) {
           const next = Math.floor(Math.random() * (index + 1));
           [cards[index], cards[next]] = [cards[next], cards[index]];
         }
         if (cards.length > 1 && cards.at(-1).id === lastCard?.id) cards.unshift(cards.pop());
       }
-      lastCard = cards.pop();
+      const contextIndex = pendingFactId ? cards.findIndex(item => item.id === pendingFactId) : -1;
+      lastCard = contextIndex >= 0 ? cards.splice(contextIndex, 1)[0] : cards.pop();
+      pendingFactId = undefined;
+      shownIds.add(lastCard.id);
       cardTitle.textContent = lastCard.title;
       cardText.textContent = lastCard.text;
     }
@@ -178,20 +234,40 @@ async function open() {
         if (!published || token !== generation) return;
         source = published;
         cards = [];
-        const current = source.find(item => item.id === lastCard?.id);
-        if (!card.hidden && current) {
-          cardTitle.textContent = current.title;
-          cardText.textContent = current.text;
-        } else if (!card.hidden) {
-          showCard();
-        }
+        // Keep the current card unchanged until its normal exit; the next
+        // slot draws from the refreshed source without repeating shown IDs.
       });
     }
+    let cardRate = 1, cardRemaining = 0, cardStarted = 0;
+    function updateCardAnimations() {
+      for (const animation of card.getAnimations({ subtree: true })) animation.updatePlaybackRate(cardRate);
+    }
+    function scheduleCard(ms) {
+      clearTimeout(cardTimer);
+      cardRemaining = ms;
+      cardStarted = performance.now();
+      cardTimer = setTimeout(cycleCard, cardRemaining / cardRate);
+    }
+    setCardRate = rate => {
+      if (cardTimer) {
+        cardRemaining = Math.max(0, cardRemaining - (performance.now() - cardStarted) * cardRate);
+        clearTimeout(cardTimer);
+      }
+      cardRate = rate;
+      updateCardAnimations();
+      if (cardTimer) scheduleCard(cardRemaining);
+    };
     const cycleCard = () => {
-      if (token !== generation || state !== 'active') return;
+      cardTimer = 0;
+      if (token !== generation) return;
+      if (state === 'entering') { scheduleCard(200); return; }
+      if (state !== 'active') return;
       card.hidden = !card.hidden;
-      if (!card.hidden) showCard();
-      cardTimer = setTimeout(cycleCard, card.hidden ? 16000 : cardReadingMs + cardExitMs);
+      if (!card.hidden) {
+        showCard();
+        requestAnimationFrame(() => { if (token === generation && !card.hidden) updateCardAnimations(); });
+      }
+      scheduleCard(card.hidden ? cardGapMs : cardReadingMs + cardExitMs);
     };
 
     requestAnimationFrame(() => {
@@ -199,7 +275,7 @@ async function open() {
       if (!eligible()) { stop(); return; }
       overlay.classList.add('is-visible');
       if (!tablet) document.documentElement.classList.add('exploration-entered');
-      cardTimer = setTimeout(cycleCard, 2500);
+      scheduleCard(2500);
     });
   } catch (error) {
     if (token === generation) { console.error('Keşif sahnesi yüklenemedi:', error); stop(); }
@@ -239,6 +315,23 @@ for (const type of ['pointerdown', 'wheel', 'scroll']) addEventListener(type, ()
   else if (type === 'scroll') recheck();
 }, { passive: true });
 addEventListener('keydown', event => {
+  if ((state === 'active' || state === 'entering') && event.code === 'Space' && !soundButton.contains(event.target)) {
+    if (state === 'active' && fastTime && !event.repeat) { slowHeld = true; applyTimeRate(); }
+    event.preventDefault(); event.stopImmediatePropagation(); return;
+  }
+  if (state === 'active' && !tabletSession && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !editableTarget(event.target)) {
+    if (event.code === 'KeyH' || event.code === 'KeyZ') {
+      timeKeys.add(event.code);
+      if (timeKeys.size === 2 && !timeChordUsed) {
+        timeChordUsed = true; fastTime = !fastTime; slowHeld = false; applyTimeRate();
+      }
+      event.preventDefault(); event.stopImmediatePropagation(); return;
+    }
+    if (event.code === 'Space' && fastTime && !soundButton.contains(event.target)) {
+      slowHeld = true; applyTimeRate();
+      event.preventDefault(); event.stopImmediatePropagation(); return;
+    }
+  }
   const letter = event.key.toLowerCase();
   const unmodified = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
   if (!unmodified || editableTarget(event.target)) shortcutKeys.clear();
@@ -267,6 +360,14 @@ addEventListener('keydown', event => {
   activity();
 }, true);
 addEventListener('keyup', event => {
+  if (event.code === 'KeyH' || event.code === 'KeyZ') {
+    timeKeys.delete(event.code);
+    if (!timeKeys.size) timeChordUsed = false;
+  }
+  if (event.code === 'Space' && slowHeld) {
+    slowHeld = false; applyTimeRate();
+    event.preventDefault(); event.stopImmediatePropagation(); return;
+  }
   shortcutKeys.delete(event.key.toLowerCase());
   if ((state === 'active' || state === 'closing') && !tabletSession && flightKeys.has(event.key)) {
     event.preventDefault(); event.stopImmediatePropagation(); scene?.keyUp(event.key, event.code);
@@ -307,12 +408,12 @@ touch.addEventListener('change', recheck);
 tiltButton.addEventListener('click', enableTilt);
 const mouseThrust = 'primary-mouse';
 overlay.addEventListener('pointerdown', event => {
-  if (state === 'active' && !tabletSession && event.pointerType === 'mouse' && event.button === 0) {
+  if (state === 'active' && !tabletSession && event.pointerType === 'mouse' && event.button === 0 && !soundButton.contains(event.target)) {
     overlay.setPointerCapture(event.pointerId);
     scene?.pressThrust(mouseThrust);
     return;
   }
-  if (state === 'active' && tabletSession && event.isPrimary && event.pointerType === 'touch' && event.target !== tiltButton) {
+  if (state === 'active' && tabletSession && event.isPrimary && event.pointerType === 'touch' && event.target !== tiltButton && !soundButton.contains(event.target)) {
     touchStart = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp };
   }
 });

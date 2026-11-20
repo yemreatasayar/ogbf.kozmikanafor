@@ -1,5 +1,11 @@
 const dither = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const planetPalettes = {
+  saturn: [[41, 32, 30], [68, 53, 42], [97, 76, 54], [130, 103, 72], [159, 131, 95], [187, 157, 117], [208, 181, 143], [229, 208, 177], [245, 230, 202]],
+  jupiter: [[43, 30, 33], [75, 49, 43], [107, 67, 53], [139, 88, 63], [170, 113, 78], [193, 143, 106], [214, 170, 137], [232, 201, 170], [249, 230, 206]],
+  uranus: [[10, 29, 46], [19, 53, 66], [31, 78, 88], [48, 107, 115], [73, 140, 143], [102, 170, 169], [139, 195, 191], [177, 216, 210], [217, 235, 226]],
+  titan: [[42, 25, 31], [70, 37, 30], [103, 51, 29], [141, 68, 30], [177, 89, 35], [205, 117, 47], [222, 150, 70], [235, 183, 105], [247, 211, 155]],
+  europa: [[32, 37, 50], [57, 59, 68], [85, 80, 86], [115, 105, 108], [146, 133, 132], [176, 164, 158], [202, 194, 182], [224, 221, 207], [245, 242, 226]],
+  neptune: [[5, 14, 42], [8, 25, 75], [12, 39, 110], [17, 58, 151], [25, 79, 181], [39, 105, 204], [66, 136, 223], [107, 173, 235], [170, 210, 245]],
   rocky: [[21, 17, 39], [43, 25, 56], [73, 35, 67], [112, 47, 72], [160, 65, 75], [199, 90, 82], [229, 125, 95], [248, 161, 111], [255, 204, 146]],
   ringed: [[19, 18, 40], [33, 27, 61], [53, 43, 88], [82, 62, 114], [114, 81, 131], [149, 108, 152], [183, 144, 177], [214, 179, 201], [249, 215, 212]],
   banded: [[12, 28, 42], [16, 44, 61], [25, 65, 83], [32, 94, 106], [49, 128, 130], [86, 163, 152], [127, 194, 169], [176, 220, 184], [223, 242, 200]]
@@ -223,7 +229,7 @@ export function makePassingCloud(seed, warm, foreground) {
 }
 
 export function makePixelPlanet(variant) {
-  const ringed = variant === 'ringed';
+  const ringed = variant === 'ringed' || variant === 'uranus' || variant === 'saturn';
   const size = 128, radius = 33, center = size / 2;
   const { image, ctx } = artSurface(size, size);
   const pixels = ctx.createImageData(size, size);
@@ -232,21 +238,34 @@ export function makePixelPlanet(variant) {
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const u = (x + .5 - center) / radius, v = (y + .5 - center) / radius;
     const r2 = u * u + v * v;
-    const along = u * .93 - v * .37, across = u * .37 + v * .93;
+    const along = variant === 'uranus' ? u * .44 - v * .90 : u * .93 - v * .37;
+    const across = variant === 'uranus' ? u * .90 + v * .44 : u * .37 + v * .93;
     const ring = Math.hypot(along, across * 3.5);
     const threshold = (dither[(y % 4) * 4 + x % 4] + .5) / 16;
     const index = (y * size + x) * 4;
-    if (ringed && ring > 1.22 && ring < 1.86 && (r2 > 1 || across > 0)) {
-      if (ring > 1.53 && ring < 1.61) continue;
+    if (ringed && ring > 1.22 && ring < (variant === 'uranus' ? 1.48 : 1.86) && (r2 > 1 || across > 0)) {
+      if (variant === 'uranus' ? (ring > 1.27 && ring < 1.39) : (ring > 1.53 && ring < 1.61)) continue;
       const tone = clamp(Math.floor(4.5 + 1.4 * Math.sin(ring * 46) - u * .9 + threshold), 1, 8);
-      pixel(pixels.data, index, palette[tone]);
+      pixel(pixels.data, index, palette[tone], variant === 'uranus' ? 85 : 210);
       continue;
     }
     if (r2 >= 1) continue;
     const z = Math.sqrt(1 - r2);
     const sun = clamp(-u * .51 - v * .43 + z * .74, 0, 1);
     let terrain = clouds(u * 4 + z, v * 4 + z, 123);
-    if (ringed) terrain += Math.sin(v * 34 + u * 5 + terrain * 4) * .19;
+    if (variant === 'uranus' || variant === 'titan') terrain = .42 + terrain * .12;
+    else if (ringed) terrain += Math.sin(v * 26 + u * 2 + terrain * 4) * .12;
+    else if (variant === 'europa') {
+      const cracks = Math.abs(Math.sin(u * 13 + v * 8 + noise(u * 3, v * 3, 91) * 3));
+      terrain = .78 - (cracks < .13 ? .75 : 0);
+    }
+    else if (variant === 'neptune') {
+      terrain = .46 + .09 * Math.sin(v * 15 + noise(u * 3, v * 4, 93) * 4) + Math.max(0, noise(u * 14, v * 12, 631) - .72) * .6;
+    }
+    else if (variant === 'jupiter') {
+      const turbulence = noise(u * 4, v * 7, 710);
+      terrain += .22 * Math.sin(v * 27 + turbulence * 6 + u * 1.4) + .10 * Math.sin(v * 48 + terrain * 5);
+    }
     else if (variant === 'banded') {
       const latitude = v * .96 + u * .22;
       terrain += .38 * Math.sin(latitude * 27 + z * 2 + terrain * 2.4);
@@ -259,34 +278,33 @@ export function makePixelPlanet(variant) {
     }
     const rim = z < .28 && sun > .35 ? .45 : 0;
     const tone = clamp(Math.floor(.26 + sun * (4 + terrain * 3.9) + rim + threshold * .8), 0, 8);
-    pixel(pixels.data, index, palette[tone]);
+    if (variant === 'europa' && terrain < .2) pixel(pixels.data, index, [133, 91, 78]);
+    else pixel(pixels.data, index, palette[tone], variant === 'titan' && z < .25 ? 185 : 255);
   }
   ctx.putImageData(pixels, 0, 0);
   return image;
 }
 
 export function makePixelComet() {
-  const w = 132, h = 44, headX = 115, headY = 22;
+  const w = 280, h = 90, headX = 248, headY = 45;
   const { image, ctx } = artSurface(w, h);
   const pixels = ctx.createImageData(w, h);
-  const palette = [[36, 40, 99], [58, 63, 149], [74, 104, 196],
-    [93, 158, 229], [132, 214, 248], [192, 247, 255], [255, 248, 233]];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const dx = headX - x, dy = y - headY;
+    const distance = Math.hypot(dx, dy);
     const t = clamp(dx / headX, 0, 1);
-    const core = Math.hypot(dx, dy);
-    let energy = Math.max(0, 1.24 - core * .115);
-    if (dx >= 0) {
-      const ion = Math.abs(dy + 5 * t * t), dust = Math.abs(dy - 12 * t * t - 2 * t);
-      const streak = hash(x, y, 419);
-      energy = Math.max(energy,
-        Math.max(0, 1 - ion / (3.1 + 3 * t)) * (1 - t) * (.75 + streak * .3),
-        Math.max(0, 1 - dust / (3 + 9 * t)) * (1 - t) * (.32 + streak * .25));
-    }
-    const cutoff = (dither[(y % 4) * 4 + x % 4] + .5) / 16;
-    if (energy < .085 + cutoff * .14) continue;
-    const tone = clamp(Math.floor(energy * 6 + cutoff * .55), 0, 6);
-    pixel(pixels.data, (y * w + x) * 4, palette[tone], energy > .6 ? 255 : Math.round(110 + energy * 206));
+    // Broad dust fan with a diffuse edge and a compact luminous coma.
+    const width = 2.2 + t * 14;
+    const fan = dx >= 0 ? Math.exp(-(((dy + t * 3) / width) ** 2) * 1.45) * (1 - t) ** 1.8 : 0;
+    const haze = dx >= 0 ? Math.exp(-(((dy + t * 3) / (width * 1.9)) ** 2)) * (1 - t) ** 2.2 : 0;
+    const coma = Math.exp(-((distance / 6) ** 2));
+    const core = Math.exp(-((distance / 1.65) ** 2));
+    const grain = .90 + .10 * hash(x, y, 419);
+    const alpha = clamp((fan * .38 + haze * .13 + coma * .52 + core * .9) * grain, 0, 1);
+    if (alpha < .006) continue;
+    const white = clamp(core + coma * .42 + fan * (1 - t) * .28, 0, 1);
+    pixel(pixels.data, (y * w + x) * 4,
+      [mix(93, 247, white), mix(138, 250, white), mix(219, 255, white)], Math.round(alpha * 255));
   }
   ctx.putImageData(pixels, 0, 0);
   return { image, headX, headY };

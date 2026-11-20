@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title desc">
+<title id="title">Olimpos uzay aracı</title><desc id="desc">Pixel-art tarzında, çift motorlu küçük uzay aracı ve hareketli mavi itki alevleri.</desc>
+<style>
+.ship{transform-origin:32px 29px;animation:bank 9s ease-in-out infinite}.flame{transform-box:fill-box;transform-origin:center top;animation:thrust 2.1s ease-in-out infinite}.flame.two{animation-delay:-.5s}@keyframes bank{0%,35%,75%,100%{transform:rotate(0deg)}43%{transform:rotate(-9deg)}52%{transform:rotate(5deg)}60%{transform:rotate(0deg)}}@keyframes thrust{0%,100%{transform:scaleY(.62);opacity:.65}50%{transform:scaleY(1.15);opacity:1}}@media(prefers-reduced-motion:reduce){.ship,.flame{animation:none}}
+</style>
+<g class="ship" shape-rendering="crispEdges">
+<g class="flame"><path d="M23 44h7v7h-2v6h-3v-6h-2z" fill="#167AD6"/><path d="M25 44h3v9h-3z" fill="#8CEBFF"/></g>
+<g class="flame two"><path d="M35 44h7v7h-2v6h-3v-6h-2z" fill="#167AD6"/><path d="M37 44h3v9h-3z" fill="#8CEBFF"/></g>
+<path d="M29 7h6v5h4v8h4v5h7v5h6v10H44v-3h-5v8H25v-8h-5v3H8V30h6v-5h7v-5h4v-8h4z" fill="#1A2744"/>
+<path d="M29 9h6v6h3v8h3v6h6v4h6v5H43v-4h-5v8H26v-8h-5v4H11v-5h6v-4h6v-6h3v-8h3z" fill="#C7D2E5"/>
+<path d="M29 9h6v7h-6z" fill="#76B8DA"/><path d="M29 17h6v6h-6z" fill="#344F70"/><path d="M26 24h12v18H26z" fill="#E5EAF2"/><path d="M30 24h4v18h-4z" fill="#9BAFCB"/>
+<path d="M11 33h10v5H11zM43 33h10v5H43z" fill="#F6A32C"/><path d="M16 30h8v3h-8zM40 30h8v3h-8z" fill="#E7EEF7"/><path d="M23 40h8v5h-8zM33 40h8v5h-8z" fill="#3E5475"/><path d="M25 42h4v3h-4zM35 42h4v3h-4z" fill="#F8C96E"/>
+</g></svg>

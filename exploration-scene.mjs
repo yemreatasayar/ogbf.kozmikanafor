@@ -1,9 +1,11 @@
+import { iceGiantSpriteSize } from './exploration-scale.mjs?v=20261120-scale';
+import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261120-flyby';
 import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
-import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid } from './exploration-pixel-art.mjs?v=20261119-orbit';
+import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid, makePixelComet } from './exploration-pixel-art.mjs?v=20261120-comet-soft';
 
-const boostLimit = 2;
-const boostImpulse = .22;
+const maxSpeed = 1.44;
+const thrustRate = .32;
 const steeringKeys = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
 const warmCloud = { type: 'cloud', duration: 19, side: 1, warm: true, seed: 411 };
 const leftCloud = { type: 'cloud', duration: 20, side: -1, warm: false, seed: 922 };
@@ -14,30 +16,33 @@ const openingPasses = [
   { ...warmCloud, gap: 3 },
   { type: 'planet', gap: 3, duration: 42, variant: 'rocky' },
   { ...asteroid, gap: 3, rock: 0 },
+  { ...warmCloud, seed: 1204, duration: 16, gap: 3, scale: 3.5 },
   { ...leftCloud, gap: 3 },
   { type: 'planet', gap: 3, duration: 42, variant: 'ringed' },
   { ...asteroid, gap: 3, rock: 1 },
   { type: 'planet', gap: 3, duration: 42, variant: 'banded' },
   { ...rightCloud, gap: 3 },
+  { ...leftCloud, seed: 2319, duration: 16, gap: 3, scale: 3.5 },
   { ...asteroid, gap: 3, rock: 2 }
 ];
-const laterPasses = [
-  { ...leftCloud, gap: 39 },
-  { ...asteroid, gap: 56, rock: 0 },
-  { ...asteroid, gap: 48, rock: 1 },
-  { ...rightCloud, gap: 42 },
-  { ...warmCloud, gap: 54 },
-  { ...asteroid, gap: 45, rock: 2 }
+const laterWorlds = [
+  { type: 'planet', duration: 40, variant: 'neptune', factId: 'uzay-neptun' },
+  { type: 'planet', duration: 43, variant: 'uranus', factId: 'uzay-27' },
+  { type: 'planet', duration: 27, variant: 'titan', factId: 'uzay-28' },
+  { type: 'planet', duration: 25, variant: 'europa', factId: 'uzay-29' }
+];
+const laterSmallPasses = [
+  { ...asteroid, rock: 0 }, { ...leftCloud }, { ...asteroid, rock: 1 }, { ...rightCloud }
 ];
 
-export function startScene(canvas, { ambient = false, onReady = () => {} } = {}) {
+export function startScene(canvas, { ambient = false, onReady = () => {}, onPass = () => {} } = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D is unavailable');
   const bannerSky = document.querySelector('.hero-sky');
   let sky;
   canvas.style.imageRendering = 'auto';
   let width = 1, height = 1, paddingX = 0, paddingY = 0, frame = 0, previous = 0, elapsed = 0;
-  let alive = true, horizontalOffset = 0, mode = 'pointer';
+  let alive = true, horizontalOffset = 0, mode = 'pointer', timeScale = 1;
   let introStarted, ready = false, exitTime = 0, onExit, onReveal, revealed = false;
   let shipArrival = 0, exitView;
   const introDuration = 1.85, exitDuration = 2.5, revealDuration = .95;
@@ -46,10 +51,23 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     cloudLight: 0, warmCloud: false, viewX: 0, viewY: 0, rcsTrail: [], nextPuff: 0 };
   let commandBank = 0, commandPitch = 0;
   const keys = new Set(), thrustInputs = new Set();
-  let boostsUsed = 0, flashUntil = 0;
+  let flashUntil = 0;
   let velocityX = 0, velocityY = 0, velocityZ = 1;
   let speed = 1, lateralTravelX = 0, lateralTravelY = 0;
   let nextPassIndex = 0, nextPassTime = openingPasses[0].gap;
+  let nextLaterPass, laterIndex = 0, worldBag = [], lastWorlds = [];
+  function chooseLaterPass() {
+    if (laterIndex++ % 2 === 0) {
+      return { ...laterSmallPasses[Math.floor(Math.random() * laterSmallPasses.length)], gap: 39 + Math.random() * 20 };
+    }
+    if (!worldBag.length) worldBag = [...laterWorlds];
+    const eligible = worldBag.filter(world => !lastWorlds.includes(world.variant));
+    const candidates = eligible.length ? eligible : worldBag;
+    const world = candidates[Math.floor(Math.random() * candidates.length)];
+    worldBag.splice(worldBag.indexOf(world), 1);
+    lastWorlds = [...lastWorlds, world.variant].slice(-2);
+    return { ...world, side: Math.random() < .5 ? -1 : 1, gap: 65 + Math.random() * 25 };
+  }
   let pass, progress = 0, passX = 0, passY = 0, distance = 1;
   let headingX = 0, headingY = 0, viewX = 0, viewY = 0;
   const planetSprites = new Map();
@@ -62,7 +80,8 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     x: (dustRandom() - .5) * 3, y: (dustRandom() - .5) * 2,
     z: .2 + dustRandom() * 5, shade: dustRandom()
   }));
-  let satellite, satelliteEntryX;
+  let satellite, satelliteEntryX, comet, cometStart = Infinity, activeContext = null;
+  const cometDuration = (12 / .7) / .2;
   const asteroidSprites = [];
   let asteroidSide = -1, asteroidViewX = 0, asteroidViewY = 0;
 
@@ -100,20 +119,22 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
   resize();
 
   function getNextPass() {
-    return openingPasses[nextPassIndex] ?? laterPasses[(nextPassIndex - openingPasses.length) % laterPasses.length];
+    return openingPasses[nextPassIndex] ?? (nextLaterPass ??= chooseLaterPass());
   }
 
   function updatePass(dt) {
     if (pass) {
-      const pace = pass.type === 'planet' || pass.type === 'cloud' ? speed : 1;
+      const pace = pass.type === 'cloud' || (pass.type === 'planet' && !pass.factId) ? speed : 1;
       progress += dt * pace / pass.duration;
       if (progress >= 1) {
+        if (pass.type === 'satellite') cometStart = elapsed + 3;
         pass = undefined;
         nextPassTime = elapsed + getNextPass().gap;
       }
     }
     if (pass || elapsed < nextPassTime) return;
     pass = getNextPass();
+    nextLaterPass = undefined;
     nextPassIndex++;
     progress = 0;
     passX = lateralTravelX;
@@ -128,6 +149,20 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
 
   function drawPlanet(dt) {
     const { variant, duration } = pass;
+    if (['neptune', 'uranus', 'titan', 'europa'].includes(variant)) {
+      if (!planetSprites.has(variant)) planetSprites.set(variant, makePixelPlanet(variant));
+      if (variant === 'titan' || variant === 'europa') {
+        drawMoonPair(ctx, width, height, variant, progress, pass.side ?? 1, planetSprites);
+        return;
+      }
+      const size = iceGiantSpriteSize(variant, width, height) * (.035 + .965 * progress ** 1.7);
+      const x = width * (.06 + 1.34 * progress ** 2.4);
+      const y = height * (-.15 + .24 * progress);
+      ctx.save();
+      ctx.drawImage(planetSprites.get(variant), x - size / 2, y - size / 2, size, size);
+      ctx.restore();
+      return;
+    }
     const ringed = variant === 'ringed';
     const startX = ringed ? .12 : .065;
     const sweep = ringed ? .50 : .55;
@@ -243,14 +278,18 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     const fadeOut = Math.min(1, (1 - t) / (foreground ? .34 : .26));
     const visibility = fadeIn * fadeOut;
     const spread = t ** (foreground ? 1.35 : 1.85);
-    const size = 2 * Math.max(width, height) * ((foreground ? .25 : .105) + spread * (foreground ? 2.28 : 1.81));
+    const size = 2 * Math.max(width, height) * ((foreground ? .25 : .105) + spread * (foreground ? 2.28 : 1.81)) * (pass.scale ?? 1);
     const cloudHeight = size * sprite.height / sprite.width;
-    const drift = .27 / pass.duration;
-    const x = width * (.5 + pass.side * (.12 - spread * .50) - (lateralTravelX - passX) * drift) - viewX * (1 - spread) * .33;
-    const y = height * (.36 + spread * .70 + .48 * spread ** 4 + (lateralTravelY - passY) * drift) + viewY * (1 - spread) * .33;
+    // Project a scene-space path through the same camera as the sky.
+    const x = width * pass.side * (.12 - spread * .50);
+    const y = height * (-.14 + spread * .70 + .48 * spread ** 4);
     ctx.save();
+    ctx.translate(width / 2 - viewX, height / 2 + viewY);
+    ctx.rotate(-bank * .03);
+    const zoom = 1 - pose.cameraBoost * .055;
+    ctx.scale(zoom, zoom);
     ctx.translate(x, y);
-    ctx.rotate(-pass.side * .19 - bank * .035);
+    ctx.rotate(-pass.side * .19);
     ctx.globalAlpha = opacity * visibility * (foreground ? .73 : .92);
     // Soften the enlarged gas layer without filtering the sky or the ship.
     ctx.imageSmoothingEnabled = true;
@@ -263,15 +302,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     thrustInputs.add(source);
     if (alreadyFiring) return;
     flashUntil = elapsed + .20;
-    if (boostsUsed >= boostLimit) return;
-    boostsUsed++;
-    // Impulse along the nose direction. Steering alone changes attitude,
-    // and the velocity vector is carried unmodified between impulses.
-    const yaw = headingX * 1.7, elevation = headingY * 1.7;
-    velocityX += boostImpulse * Math.sin(yaw) * Math.cos(elevation);
-    velocityY += boostImpulse * Math.sin(elevation);
-    velocityZ += boostImpulse * Math.cos(yaw) * Math.cos(elevation);
-    speed = Math.hypot(velocityX, velocityY, velocityZ);
+
   }
 
   function render(now) {
@@ -286,12 +317,13 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       frame = requestAnimationFrame(render);
       return;
     }
-    const dt = previous ? Math.min((now - previous) / 1000, .05) : 0;
+    const realDt = previous ? Math.min((now - previous) / 1000, .05) : 0;
     previous = now;
     introStarted ??= now;
     const entering = !ready && !onExit;
     const intro = Math.min(1, (now - introStarted) / (introDuration * 1000));
     const leaving = Boolean(onExit);
+    const dt = realDt * (!entering && !leaving ? timeScale : 1);
     // Hidden tabs may suspend RAF. Only advance the departure while visible
     // so the first frame after returning is still part of the transition.
     if (leaving) exitTime += dt;
@@ -326,7 +358,15 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     const firing = thrustInputs.size > 0 || elapsed < flashUntil;
     const motorResponse = 1 - Math.exp(-3.2 * dt);
     boost += (Number(firing) - boost) * motorResponse;
-    const speedFraction = clamp((speed - 1) / (boostLimit * boostImpulse), 0, 1);
+    if (!entering && !leaving && thrustInputs.size) {
+      const yaw = headingX * 1.7, elevation = headingY * 1.7;
+      const response = 1 - Math.exp(-thrustRate / maxSpeed * dt);
+      velocityX += (maxSpeed * Math.sin(yaw) * Math.cos(elevation) - velocityX) * response;
+      velocityY += (maxSpeed * Math.sin(elevation) - velocityY) * response;
+      velocityZ += (maxSpeed * Math.cos(yaw) * Math.cos(elevation) - velocityZ) * response;
+      speed = Math.hypot(velocityX, velocityY, velocityZ);
+    }
+    const speedFraction = clamp((speed - 1) / (maxSpeed - 1), 0, 1);
     const cruiseZoom = Math.sqrt(speedFraction);
     pose.cameraBoost += (cruiseZoom - pose.cameraBoost) * motorResponse;
     horizontalOffset = bank * width * .035;
@@ -346,12 +386,30 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       horizontalOffset = bank * width * .035;
       pose.cameraBoost = exitView.zoom * (1 - settle);
       if (pass) {
-        const pace = pass.type === 'planet' || pass.type === 'cloud' ? speed : 1;
+        const pace = pass.type === 'cloud' || (pass.type === 'planet' && !pass.factId) ? speed : 1;
         progress += dt * pace / pass.duration;
         if (progress >= 1) pass = undefined;
       }
     } else if (!entering) {
       updatePass(dt);
+    }
+    const cometProgress = (elapsed - cometStart) / cometDuration;
+    const cometActive = cometProgress >= 0 && cometProgress < 1;
+    // Prefer a foreground event's card over the distant comet's card.
+    if (!entering && !leaving) {
+      let context = null;
+      if (pass?.factId) {
+        const pair = pass.variant === 'titan' || pass.variant === 'europa' ? moonPairGeometry(width, height, pass.variant, progress) : null;
+        const x = pair ? pair.moonX : width * (.06 + 1.34 * progress ** 2.4);
+        const y = pair ? pair.moonY : height * (-.15 + .24 * progress);
+        if (progress > .06 && progress < .94 && width / 2 - viewX + x > 0 && width / 2 - viewX + x < width && height / 2 + viewY + y > 0 && height / 2 + viewY + y < height) context = pass.factId;
+      }
+      if (!context && cometActive) {
+        const x = width * (-.90 + cometProgress * 1.95);
+        const y = height * (-.18 - cometProgress * .10);
+        if (width / 2 - viewX + x > 0 && width / 2 - viewX + x < width && height / 2 + viewY + y > 0 && height / 2 + viewY + y < height) context = 'uzay-kuyruklu-yildiz';
+      }
+      if (context !== activeContext) { activeContext = context; onPass(context); }
     }
     const zoom = 1 - pose.cameraBoost * .055;
     ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
@@ -382,6 +440,18 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
     ctx.globalAlpha = objectsOpacity;
     if (pass?.type === 'satellite') drawSatellite();
     if (pass?.type === 'planet') drawPlanet(dt);
+    if (cometActive && objectsOpacity > 0) {
+      comet ??= makePixelComet();
+      const span = Math.min(width * .17, height * .30);
+      const x = width * (-.90 + cometProgress * 1.95);
+      const y = height * (-.18 - cometProgress * .10);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(.12);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(comet.image, -span * comet.headX / comet.image.width, -span * comet.headY / comet.image.width, span, span * comet.image.height / comet.image.width);
+      ctx.restore();
+    }
     ctx.restore();
     const cloud = pass?.type === 'cloud';
     if (cloud && objectsOpacity > 0) drawPassingCloud(false, objectsOpacity);
@@ -406,7 +476,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       shipArrival = 0;
     }
     pose.verticalOffset = shipArrival * height;
-    drawShip(ctx, width, height, horizontalOffset, (now - introStarted) / 1000, pose);
+    drawShip(ctx, width, height, horizontalOffset, entering || leaving ? (now - introStarted) / 1000 : elapsed + introDuration, pose);
     if (cloud && objectsOpacity > 0) drawPassingCloud(true, objectsOpacity);
     if (leaving && outro === 1 && !revealed) {
       revealed = true;
@@ -431,6 +501,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {} } = {})
       onExit = done;
     },
     resetFrameClock() { previous = 0; },
+    setTimeScale(rate) { timeScale = rate === 5 ? 5 : 1; },
     setPointer(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width) return;

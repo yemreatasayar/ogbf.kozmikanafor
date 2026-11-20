@@ -1,4 +1,4 @@
-import { galleryCards, featuredSupporters, marqueeSupporters, siteSettings, locationUrl } from "./content.js?v=20261119-cards";
+import { galleryCards, featuredSupporters, marqueeSupporters, siteSettings, locationUrl } from "./content.js?v=20261120-cards";
 import { bindMarqueeDrag } from "./marquee-drag.mjs?v=20261104-review";
 
 const gallery = document.querySelector("#gallery-grid");
@@ -453,4 +453,4 @@ addEventListener("load", updateHeroGalleryBoundary, { once: true });
 
 import "./sky-effects.mjs?v=20261119-mouse";
 
-import "./exploration-controller.mjs?v=20261119-card-800";
+import "./exploration-controller.mjs?v=20261120-header-sound";

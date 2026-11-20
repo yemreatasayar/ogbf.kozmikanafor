@@ -14,8 +14,8 @@
     <link rel="stylesheet" href="revision-type.css?v=20261112-alignment">
     <link rel="stylesheet" href="revision-supporters.css?v=20261114-mobile">
     <link rel="stylesheet" href="revision-hero.css?v=20261114-mobile">
-    <link rel="stylesheet" href="exploration.css?v=20261119-card-800">
-    <script type="module" src="main.js?v=20261119-card-800"></script>
+    <link rel="stylesheet" href="exploration.css?v=20261120-tooltip">
+    <script type="module" src="main.js?v=20261120-header-sound"></script>
   </head>
   <body>
     <a class="skip-link" href="#top">İçeriğe geç</a>
@@ -26,6 +26,7 @@
         <a class="nav-link" href="#festival">FESTİVAL</a>
         <a class="nav-link" href="#katilim">PROGRAM VE KATILIM</a>
         <a class="nav-link" href="#kesfet">GÖKYÜZÜNÜ KEŞFET</a>
+        <button class="exploration-launch" type="button" aria-label="Uzay yolculuğunu başlat"><img src="assets/hero/olimpos-uzay-araci.svg" alt=""><span>Biraz uzayda kaybolmaya ne dersin?</span></button>
       </nav>
     </header>
 
@@ -48,6 +49,7 @@
           <img class="hero-telescope" width="210" height="390" src="assets/hero/telescope.svg?v=20261030-mobile-7" alt="">
           </div>
           <div class="exploration" hidden>
+            <button class="exploration-sound" type="button" aria-label="Müziği aç" aria-pressed="false">♪ <span>Ses aç</span></button>
             <button class="exploration-tilt exploration-button" type="button" hidden>Eğim kontrolünü aç</button>
             <p class="exploration-touch-hint" hidden>Çıkmak için dokun veya kaydır</p>
             <canvas class="exploration-canvas" aria-hidden="true"></canvas>
