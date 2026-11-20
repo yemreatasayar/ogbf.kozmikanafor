@@ -327,6 +327,9 @@ addEventListener('pointermove', event => {
   if (state === 'active' && !tabletSession && event.pointerType === 'mouse') scene?.setPointer(event.clientX, event.clientY);
   else activity();
 }, { passive: true });
+addEventListener('wheel', event => {
+  if (state === 'entering' || state === 'active' || state === 'closing') event.preventDefault();
+}, { passive: false });
 for (const type of ['pointerdown', 'wheel', 'scroll']) addEventListener(type, () => {
   if (state === 'loading') activity();
   else if (state === 'idle') activity();
@@ -336,6 +339,9 @@ for (const type of ['pointerdown', 'wheel', 'scroll']) addEventListener(type, ()
   else if (type === 'scroll') recheck();
 }, { passive: true });
 addEventListener('keydown', event => {
+  if ((state === 'entering' || state === 'active' || state === 'closing') && ['PageDown', 'PageUp', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault(); event.stopImmediatePropagation(); return;
+  }
   if ((state === 'active' || state === 'entering') && event.code === 'Space' && !soundButton.contains(event.target)) {
     if (state === 'active' && fastTime && !event.repeat) { slowHeld = true; applyTimeRate(); }
     event.preventDefault(); event.stopImmediatePropagation(); return;
