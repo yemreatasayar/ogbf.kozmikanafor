@@ -11,7 +11,9 @@ export function moonPairGeometry(width, height, variant, progress) {
   // creates a different composition.
   const x = width * (variant === 'titan'
     ? .16 + .42 * t ** 2.1
-    : .045 + .92 * t ** 2.1);
+    : .045 + .92 * t ** 2.1)
+    // Clear the view even when the camera follows the system to the right.
+    + (width * .95 + height * .20) * t ** 8;
   const y = height * (.10 + .045 * t);
   const planetSize = unit * (.535 * t ** 2.4);
   const moonSize = unit * ((variant === 'titan' ? .121 : .106) * t ** 2.4);

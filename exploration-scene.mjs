@@ -1,5 +1,5 @@
 import { iceGiantSpriteSize } from './exploration-scale.mjs?v=20261120-scale';
-import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261121-distant';
+import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261121-exit';
 import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
 import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid, makePixelComet } from './exploration-pixel-art.mjs?v=20261120-comet-soft';
