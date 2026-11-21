@@ -323,7 +323,7 @@ async function readPublishedCards(signal) {
 }
 
 function activity() {
-  if (state === 'loading') { stop(); return; }
+  if (state === 'loading') { if (!manualSession) stop(); return; }
   if (state === 'idle') { recheck(); schedule(); }
 }
 addEventListener('pointermove', event => {
@@ -338,7 +338,9 @@ for (const type of ['pointerdown', 'wheel', 'scroll']) addEventListener(type, ()
   else if (state === 'idle') activity();
   // A scroll means the visitor is returning to the page. Close immediately
   // so the moving page title cannot overlap the exploration canvas.
-  else if (type === 'scroll' && (state === 'active' || state === 'entering')) stop();
+  else if (type === 'scroll' && (state === 'active' || state === 'entering')) {
+    if (!(manualSession && state === 'entering' && window.scrollY <= 1)) stop();
+  }
   else if (type === 'scroll') recheck();
 }, { passive: true });
 addEventListener('keydown', event => {

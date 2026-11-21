@@ -453,4 +453,4 @@ addEventListener("load", updateHeroGalleryBoundary, { once: true });
 
 import "./sky-effects.mjs?v=20261119-mouse";
 
-import "./exploration-controller.mjs?v=20261121-all-exits";
+import "./exploration-controller.mjs?v=20261121-launch-fix";
