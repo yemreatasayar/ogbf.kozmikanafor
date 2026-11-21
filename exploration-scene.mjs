@@ -170,7 +170,11 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
     const exitSweep = 1.21 + height / width * .03 - startX - sweep;
     const path = .23 * progress + .77 * progress ** 2;
     const drift = .27 / duration;
-    const x = width * (startX + sweep * path + exitSweep * progress ** 5 - (lateralTravelX - passX) * drift);
+    const lateralDrift = (lateralTravelX - passX) * drift;
+    const exit = progress ** 8;
+    // Gradually clear the full camera range, including after lateral thrust.
+    const x = width * (startX + sweep * path + exitSweep * progress ** 5 - lateralDrift * (1 - exit))
+      + (width * .45 + height * .30) * exit;
     const y = height * (ringed
       ? -.26 + .085 * Math.sin(Math.PI * progress) + .035 * progress
       : -.18 + .13 * path) + height * (lateralTravelY - passY) * drift;
