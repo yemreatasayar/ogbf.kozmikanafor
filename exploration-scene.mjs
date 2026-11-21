@@ -1,5 +1,5 @@
 import { iceGiantSpriteSize } from './exploration-scale.mjs?v=20261120-scale';
-import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261121-steer';
+import { drawMoonPair, moonPairGeometry } from './exploration-moon-pairs.mjs?v=20261121-distant';
 import { drawShip } from './exploration-ship.mjs?v=20261119-transition';
 
 import { makePixelSky, makePixelPlanet, makePassingCloud, makePixelAsteroid, makePixelComet } from './exploration-pixel-art.mjs?v=20261120-comet-soft';
@@ -155,7 +155,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
         drawMoonPair(ctx, width, height, variant, progress, pass.side ?? 1, planetSprites);
         return;
       }
-      const size = iceGiantSpriteSize(variant, width, height) * (.035 + .965 * progress ** 1.7);
+      const size = iceGiantSpriteSize(variant, width, height) * progress ** 2.4;
       const x = width * (.06 + 1.34 * progress ** 2.4);
       const y = height * (-.15 + .24 * progress);
       ctx.save();

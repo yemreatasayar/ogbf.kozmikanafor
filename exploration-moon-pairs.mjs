@@ -13,13 +13,13 @@ export function moonPairGeometry(width, height, variant, progress) {
     ? .16 + .42 * t ** 2.1
     : .045 + .92 * t ** 2.1);
   const y = height * (.10 + .045 * t);
-  const planetSize = unit * (.055 + .48 * near);
-  const moonSize = unit * (.006 + (variant === 'titan' ? .115 : .10) * near);
+  const planetSize = unit * (.535 * t ** 2.4);
+  const moonSize = unit * ((variant === 'titan' ? .121 : .106) * t ** 2.4);
   // Offset from parent is in the plane of the view; changing distance also
   // changes the separation. This is a composed projection, not an ephemeris.
   return { x, y, planetSize, moonSize,
-    moonX: x + unit * (.035 + .22 * near),
-    moonY: y + unit * (.018 + .11 * near) };
+    moonX: x + unit * (.255 * near),
+    moonY: y + unit * (.128 * near) };
 }
 
 export function drawMoonPair(ctx, width, height, variant, progress, side = 1, cache = new Map()) {
