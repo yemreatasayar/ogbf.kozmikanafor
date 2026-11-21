@@ -453,4 +453,4 @@ addEventListener("load", updateHeroGalleryBoundary, { once: true });
 
 import "./sky-effects.mjs?v=20261119-mouse";
 
-import "./exploration-controller.mjs?v=20261121-distant";
+import "./exploration-controller.mjs?v=20261121-focus";

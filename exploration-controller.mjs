@@ -152,8 +152,11 @@ function finishStop() {
   pausedExitAnimations = [];
   scene?.destroy(); scene = null;
   overlay.classList.remove('is-visible', 'is-closing', 'is-revealing');
+  const restoreFocus = overlay.contains(document.activeElement);
   overlay.hidden = true; card.hidden = true;
-  setFlight(false); state = 'idle'; manualSession = false;
+  setFlight(false); state = 'idle';
+  if (restoreFocus && manualSession) launchButton.focus({ preventScroll: true });
+  manualSession = false;
   document.documentElement.classList.remove('exploration-entered', 'exploration-returning', 'exploration-banner-revealing');
   wasEligible = false;
   recheck();
@@ -371,7 +374,14 @@ addEventListener('keydown', event => {
     if (state === 'loading') return;
   }
   if ((state === 'entering' || state === 'active' || state === 'closing') && event.key === 'Tab') {
-    stop(); return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (state === 'closing') return;
+    const buttons = [...overlay.querySelectorAll('button:not([disabled]):not([hidden])')].filter(button => button.getClientRects().length);
+    if (!buttons.length) return;
+    const current = buttons.indexOf(document.activeElement);
+    const next = current < 0 ? (event.shiftKey ? buttons.length - 1 : 0) : (current + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+    buttons[next].focus({ preventScroll: true });
+    return;
   }
   if (state !== 'idle' && event.key === 'Escape') {
     event.preventDefault(); event.stopImmediatePropagation();
