@@ -54,7 +54,20 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
   let flashUntil = 0;
   let velocityX = 0, velocityY = 0, velocityZ = 1;
   let speed = 1, lateralTravelX = 0, lateralTravelY = 0;
-  let nextPassIndex = 0, nextPassTime = openingPasses[0].gap;
+  // Draw three distinct planets for the existing opening slots on every flight.
+  const planetChoices = [
+    ...laterWorlds,
+    { type: 'planet', duration: 42, variant: 'rocky' },
+    { type: 'planet', duration: 42, variant: 'ringed' },
+    { type: 'planet', duration: 42, variant: 'banded' }
+  ];
+  for (let i = planetChoices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [planetChoices[i], planetChoices[j]] = [planetChoices[j], planetChoices[i]];
+  }
+  const sessionOpeningPasses = openingPasses.map(item => item.type === 'planet'
+    ? { ...planetChoices.pop(), gap: item.gap } : item);
+  let nextPassIndex = 0, nextPassTime = sessionOpeningPasses[0].gap;
   let nextLaterPass, laterIndex = 0, worldBag = [], lastWorlds = [];
   function chooseLaterPass() {
     if (laterIndex++ % 2 === 0) {
@@ -119,7 +132,7 @@ export function startScene(canvas, { ambient = false, onReady = () => {}, onPass
   resize();
 
   function getNextPass() {
-    return openingPasses[nextPassIndex] ?? (nextLaterPass ??= chooseLaterPass());
+    return sessionOpeningPasses[nextPassIndex] ?? (nextLaterPass ??= chooseLaterPass());
   }
 
   function updatePass(dt) {

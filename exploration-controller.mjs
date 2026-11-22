@@ -210,12 +210,12 @@ async function open() {
   state = 'loading';
   const token = ++generation;
   try {
-    const module = await import('./exploration-scene.mjs?v=20261121-all-exits');
+    const module = await import('./exploration-scene.mjs?v=20261122-random');
     if (token !== generation || state !== 'loading') return;
     if (!eligible()) { stop(); return; }
     positionOverlay(); overlay.hidden = false;
     let pendingFactId;
-    scene = module.startScene(canvas, { ambient: tablet, onPass(id) { pendingFactId = id; }, onReady() {
+    scene = module.startScene(canvas, { ambient: tablet, onPass(id) { if (id) pendingFactId = id; }, onReady() {
       if (token !== generation || state !== 'entering') return;
       state = 'active';
     } });
@@ -244,7 +244,9 @@ async function open() {
         if (cards.length > 1 && cards.at(-1).id === lastCard?.id) cards.unshift(cards.pop());
       }
       const contextIndex = pendingFactId ? cards.findIndex(item => item.id === pendingFactId) : -1;
-      lastCard = contextIndex >= 0 ? cards.splice(contextIndex, 1)[0] : cards.pop();
+      const repeatedPlanet = pendingFactId && pendingFactId !== 'uzay-kuyruklu-yildiz'
+        ? source.find(item => item.id === pendingFactId) : undefined;
+      lastCard = contextIndex >= 0 ? cards.splice(contextIndex, 1)[0] : (repeatedPlanet ?? cards.pop());
       pendingFactId = undefined;
       shownIds.add(lastCard.id);
       cardTitle.textContent = lastCard.title;
